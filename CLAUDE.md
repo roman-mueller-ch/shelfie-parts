@@ -37,7 +37,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - [ ] Print server on the Pi 3
 - [ ] Capture API, then PWA
 
-Tailscale prep (MagicDNS, HTTPS certificates, two pre-approved one-time auth keys) may still be pending; check before `apply`.
+Tailscale prep is done (MagicDNS, HTTPS certificates, two pre-approved one-time auth keys).
 
 ## Environment and gotchas
 
