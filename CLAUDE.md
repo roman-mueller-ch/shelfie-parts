@@ -32,7 +32,8 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 
 - [x] Repo, README, Terraform (`infra/`), compose stack (`deploy/`), vision prompt/schema/CLI (`vision/`), backup script, getting-started guide
 - [x] On Roman's Mac: `terraform init`, `terraform validate`, `terraform plan` succeed
-- [ ] **Next:** `terraform apply`, then deploy the compose stack (docs/getting-started.md §2–3)
+- [x] `terraform apply` (2026-10-27): VM up, cloud-init done, `shelfie-vm` on the tailnet; Azure OpenAI `oai-shelfie-xv86jc` with `gpt-5-mini` deployed
+- [ ] **Next:** deploy the compose stack (docs/getting-started.md §3); the Mac must be on the tailnet first
 - [ ] Test `vision/identify.py` with real parts and tune `vision/prompt.md`
 - [ ] Print server on the Pi 3
 - [ ] Capture API, then PWA
