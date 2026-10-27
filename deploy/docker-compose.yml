@@ -1,0 +1,66 @@
+# Shelfie stack. Runs on any Linux host with Docker: the Azure VM today,
+# a VPS or a Pi tomorrow. All state lives in ./data next to this file.
+#
+# Each service gets its own Tailscale sidecar, so it appears on the tailnet
+# under its own name with automatic HTTPS (https://parts.<tailnet>.ts.net).
+# Nothing is published on the host's network interfaces.
+
+name: shelfie
+
+services:
+  # ---------------------------------------------------------------- Part-DB
+  ts-parts:
+    image: tailscale/tailscale:latest
+    hostname: parts
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY_PARTS:?set TS_AUTHKEY_PARTS in .env}
+      - TS_HOSTNAME=parts
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/serve.json
+      - TS_USERSPACE=false
+      - TS_AUTH_ONCE=true
+      - TS_ENABLE_HEALTH_CHECK=true
+      - TS_LOCAL_ADDR_PORT=127.0.0.1:41234
+    volumes:
+      # Mount the folder, not the file, so serve.json edits are picked up.
+      - ./tailscale/parts:/config:ro
+      - ./data/tailscale/parts:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:41234/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  partdb:
+    image: jbtronics/part-db1:latest
+    network_mode: service:ts-parts
+    depends_on:
+      ts-parts:
+        condition: service_healthy
+    volumes:
+      - ./data/partdb/uploads:/var/www/html/uploads
+      - ./data/partdb/public_media:/var/www/html/public/media
+      - ./data/partdb/db:/var/www/html/var/db
+    environment:
+      - DATABASE_URL=sqlite:///%kernel.project_dir%/var/db/app.db
+      - DATABASE_SQLITE_ENFORCE_FOREIGN_KEYS=1
+      - APP_ENV=docker
+      - APP_SECRET=${PARTDB_APP_SECRET:?set PARTDB_APP_SECRET in .env}
+      - DEFAULT_LANG=en
+      - DEFAULT_TIMEZONE=Europe/Zurich
+      # Cannot be changed after the first prices are stored.
+      - BASE_CURRENCY=${PARTDB_BASE_CURRENCY:-CHF}
+      - INSTANCE_NAME=Shelfie
+      - ALLOW_ATTACHMENT_DOWNLOADS=0
+      - USE_GRAVATAR=0
+      # Requests arrive from the Tailscale sidecar on localhost.
+      - TRUSTED_PROXIES=127.0.0.1
+      # Only answer to the tailnet name (parts.<tailnet>.ts.net).
+      - TRUSTED_HOSTS=^parts\.
+    restart: unless-stopped

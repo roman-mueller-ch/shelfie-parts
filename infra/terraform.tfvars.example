@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars (git-ignored) and fill in.
+
+subscription_id      = "00000000-0000-0000-0000-000000000000"
+admin_ssh_public_key = "ssh-ed25519 AAAA... roman@macbook-air"
+
+# Tailscale admin console → Settings → Keys → Generate auth key
+# (not reusable, pre-approved). Only used on first boot.
+tailscale_auth_key = "tskey-auth-..."
+
+# Optional overrides
+# location        = "switzerlandnorth"
+# vm_size         = "Standard_B1ms"
+# admin_username  = "roman"

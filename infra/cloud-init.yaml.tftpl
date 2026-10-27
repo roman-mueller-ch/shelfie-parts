@@ -1,0 +1,36 @@
+#cloud-config
+# Rendered by Terraform. Keep everything here idempotent and app-agnostic:
+# the VM only provides Docker, Tailscale and a data folder.
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  - sqlite3
+  - rsync
+  - unattended-upgrades
+
+write_files:
+  - path: /etc/apt/apt.conf.d/52shelfie-unattended-reboot
+    content: |
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "04:30";
+
+runcmd:
+  # Docker Engine + compose plugin from Docker's official repository
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list'
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - usermod -aG docker ${admin_username}
+
+  # Tailscale on the host, with Tailscale SSH
+  - curl -fsSL https://tailscale.com/install.sh | sh
+  - tailscale up --auth-key='${tailscale_auth_key}' --hostname='${tailscale_hostname}' --ssh
+
+  # App folder
+  - install -d -o ${admin_username} -g ${admin_username} /srv/shelfie

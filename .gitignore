@@ -12,3 +12,7 @@ __pycache__/
 .venv/
 .DS_Store
 data/
+terraform.tfvars
+crash.log
+backups/
+vision/results/

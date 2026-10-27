@@ -1,0 +1,120 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_type", "items", "needs_better_photo", "photo_advice"],
+  "properties": {
+    "source_type": {
+      "type": "string",
+      "enum": ["part_photo", "packaging_photo", "product_page", "mixed", "other"],
+      "description": "What the image shows: the physical part, its bag or label, a shop or product page screenshot, a mix, or something else."
+    },
+    "items": {
+      "type": "array",
+      "description": "One entry per distinct part type. Identical parts count as one item with a quantity estimate.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "kind",
+          "category_path",
+          "mpn",
+          "manufacturer",
+          "package",
+          "key_parameters",
+          "visible_markings",
+          "quantity_estimate",
+          "search_terms",
+          "confidence",
+          "notes"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Short, human-friendly name as it should appear in the inventory, e.g. \"TP4056 Li-ion charger module (USB-C)\"."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ic",
+              "module",
+              "dev_board",
+              "sensor",
+              "display",
+              "passive",
+              "discrete",
+              "connector",
+              "electromechanical",
+              "power",
+              "cable",
+              "mechanical",
+              "tool",
+              "other"
+            ]
+          },
+          "category_path": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Category from general to specific, e.g. [\"Modules\", \"Power\", \"Battery chargers\"]."
+          },
+          "mpn": {
+            "type": ["string", "null"],
+            "description": "Manufacturer part number, only if read from the image or certain. Never guessed."
+          },
+          "manufacturer": {
+            "type": ["string", "null"],
+            "description": "Chip or part manufacturer if known; null for generic or unbranded parts."
+          },
+          "package": {
+            "type": ["string", "null"],
+            "description": "Package or footprint, e.g. \"SOP-8\", \"0805\", \"TO-220\", \"DIP-16\"; null for modules."
+          },
+          "key_parameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "value", "unit"],
+              "properties": {
+                "name": { "type": "string" },
+                "value": { "type": "string" },
+                "unit": { "type": ["string", "null"] }
+              }
+            },
+            "description": "The few parameters that distinguish this part, e.g. resistance, voltage, interface."
+          },
+          "visible_markings": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Text and codes read verbatim from the part, silkscreen or label."
+          },
+          "quantity_estimate": {
+            "type": ["integer", "null"],
+            "description": "How many pieces are visible or stated on the packaging; null if unclear."
+          },
+          "search_terms": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "2-5 terms to look this part up in the inventory, most specific first."
+          },
+          "confidence": {
+            "type": "number",
+            "description": "0.0-1.0: how sure the identification is."
+          },
+          "notes": {
+            "type": ["string", "null"],
+            "description": "Anything a human should check, e.g. a likely clone, a variant ambiguity, or a missing marking."
+          }
+        }
+      }
+    },
+    "needs_better_photo": {
+      "type": "boolean",
+      "description": "True if a different photo would clearly improve the identification."
+    },
+    "photo_advice": {
+      "type": ["string", "null"],
+      "description": "If needs_better_photo is true: one short, concrete tip, e.g. \"Photograph the chip markings up close\"."
+    }
+  }
+}

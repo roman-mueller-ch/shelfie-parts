@@ -1,0 +1,25 @@
+{
+  "source_type": "part_photo",
+  "items": [
+    {
+      "name": "TP4056 Li-ion charger module with protection (USB-C)",
+      "kind": "module",
+      "category_path": ["Modules", "Power", "Battery chargers"],
+      "mpn": "TP4056",
+      "manufacturer": "NanJing Top Power",
+      "package": null,
+      "key_parameters": [
+        { "name": "Charge current", "value": "1", "unit": "A" },
+        { "name": "Input", "value": "USB-C, 5", "unit": "V" },
+        { "name": "Protection IC", "value": "DW01A + FS8205A", "unit": null }
+      ],
+      "visible_markings": ["TP4056", "DW01A", "8205A", "B+", "B-", "OUT+", "OUT-"],
+      "quantity_estimate": 5,
+      "search_terms": ["TP4056", "Li-ion charger module", "battery charger USB-C"],
+      "confidence": 0.95,
+      "notes": "Version with protection circuit (has OUT+/OUT- pads)."
+    }
+  ],
+  "needs_better_photo": false,
+  "photo_advice": null
+}

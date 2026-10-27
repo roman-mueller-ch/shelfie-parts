@@ -68,8 +68,12 @@ shelfie-parts/
 ├── capture-api/    # ASP.NET Core minimal API
 ├── capture-web/    # React + Vite PWA
 ├── print-server/   # FastAPI print service for the Pi (+ systemd unit, udev rule)
-└── scripts/        # backup.sh, restore.sh
+├── vision/         # vision prompt, JSON schema, identify.py test CLI
+├── scripts/        # backup.sh
+└── docs/           # getting-started.md
 ```
+
+**→ Setup: [docs/getting-started.md](docs/getting-started.md)**
 
 ## Design principles
 
@@ -77,22 +81,25 @@ shelfie-parts/
 - **Swappable AI.** The vision provider sits behind an OpenAI-compatible client; switching providers is a configuration change.
 - **No open ports.** The VM's network security group blocks all inbound traffic. Access, SSH included, goes through Tailscale.
 - **Backups off-cloud.** Data is copied nightly to the home NAS, so losing the cloud subscription never means losing the inventory.
-- **Pull, don't push, at home.** The home network exposes nothing; the print server is reachable only from the capture API via Tailscale ACLs.
+- **Nothing exposed at home.** No port forwarding; the print server is reachable only from the capture API, via Tailscale ACLs.
 
 ## Roadmap
 
-- [ ] Part-DB on the Azure VM behind Tailscale
+- [x] Infrastructure: Terraform for the Azure VM and Azure OpenAI deployment
+- [x] Part-DB behind a Tailscale sidecar (docker compose)
+- [x] Vision prompt, JSON schema and `identify.py` test CLI
+- [ ] Vision prompt tested and tuned with real parts
 - [ ] Print server on the Raspberry Pi 3 (P700 via `ptouch-print`)
-- [ ] Vision prompt and JSON schema, tested with real parts
 - [ ] Capture API: identify → search → create → print
 - [ ] Capture PWA
 - [ ] "Do I already have it?" check from screenshots and AliExpress links
-- [ ] Nightly backups to the Synology
+- [x] Backup script (SQLite snapshot + uploads → rsync)
+- [ ] Nightly backups to the Synology scheduled
 - [ ] CI: build and publish images to GHCR
 
 ## Status
 
-🚧 Early planning. Nothing to install yet.
+🚧 Foundations in place: infrastructure, Part-DB and the vision test CLI. Not yet deployed or tested against Azure.
 
 ## License
 
