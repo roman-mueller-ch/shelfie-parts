@@ -1,0 +1,14 @@
+.env
+*.env
+!.env.example
+.terraform/
+*.tfstate
+*.tfstate.*
+bin/
+obj/
+node_modules/
+dist/
+__pycache__/
+.venv/
+.DS_Store
+data/
