@@ -1,0 +1,8 @@
+# Build context is the repo root (capture-api/Dockerfile needs vision/).
+**/bin/
+**/obj/
+**/.env
+**/data/
+infra/
+.git/
+vision/results/

@@ -64,3 +64,46 @@ services:
       # Only answer to the tailnet name (parts.<tailnet>.ts.net).
       - TRUSTED_HOSTS=^parts\.
     restart: unless-stopped
+
+  # ------------------------------------------------------------ Capture API
+  ts-capture:
+    image: tailscale/tailscale:latest
+    hostname: capture
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY_CAPTURE:?set TS_AUTHKEY_CAPTURE in .env}
+      - TS_HOSTNAME=capture
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/serve.json
+      - TS_USERSPACE=false
+      - TS_AUTH_ONCE=true
+      # The API calls Part-DB and the print server by their tailnet names.
+      - TS_ACCEPT_DNS=true
+      - TS_ENABLE_HEALTH_CHECK=true
+      - TS_LOCAL_ADDR_PORT=127.0.0.1:41234
+    volumes:
+      - ./tailscale/capture:/config:ro
+      - ./data/tailscale/capture:/var/lib/tailscale
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:41234/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  capture-api:
+    image: ghcr.io/roman-mueller-ch/shelfie-capture-api:latest
+    network_mode: service:ts-capture
+    depends_on:
+      ts-capture:
+        condition: service_healthy
+    environment:
+      - Vision__BaseUrl=${CAPTURE_VISION_BASE_URL:?set CAPTURE_VISION_BASE_URL in .env}
+      - Vision__ApiKey=${CAPTURE_VISION_API_KEY:?set CAPTURE_VISION_API_KEY in .env}
+      - PartDb__ApiToken=${CAPTURE_PARTDB_TOKEN:?set CAPTURE_PARTDB_TOKEN in .env}
+      # PartDb__BaseUrl and PrintServer__BaseUrl default to the tailnet names in appsettings.json.
+    restart: unless-stopped

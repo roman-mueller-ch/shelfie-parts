@@ -1,0 +1,52 @@
+# Builds the capture API image and publishes it to GHCR:
+#   ghcr.io/roman-mueller-ch/shelfie-capture-api:latest (and :sha-<commit>)
+
+name: capture-api
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - capture-api/**
+      - vision/prompt.md
+      - vision/schema.json
+      - .dockerignore
+      - .github/workflows/capture-api.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/shelfie-capture-api
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: capture-api/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
