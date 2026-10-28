@@ -1,4 +1,4 @@
-# Storage: Gridfinity bins in an IKEA Helmer
+# Storage: Gridfinity bins in an IKEA Helmer and on the wall
 
 Physical layout of the inventory. Every bin is a storage location in Part-DB, with a QR label on the P700.
 
@@ -118,6 +118,42 @@ Per drawer one **5×5** and one **5×4** baseplate (both fit the A1's 256 × 256
 
 **Settings:** a generator such as Gridfinity Rebuilt (OpenSCAD) or the parametric Gridfinity models on MakerWorld; label tabs on, stacking lip on, magnet holes off. Choose a label tab that fits **9 mm tape**, the size currently loaded in the P700.
 
+## Wall: Multiboard work area
+
+A small area on the Multiboard wall next to the desk, **35 × 35 cm**, for things in use. The Helmer stays the main store. Bins on the wall use Gridfinity shelves that click into Multiboard, so the same bins move between wall and drawers.
+
+```
+┌──────────────────────── 35 cm ────────────────────────┐
+│  W-INBOX                       │  P700 tape cassettes  │  top: parcels can stick out freely
+│  2×4 shelf, one 4×2 bin (10u)  │  (item holder)        │
+├────────────────────────────────┼───────────────────────┤
+│  W-PROJECT                     │  free: second project │  middle
+│  2×4 shelf, two 2×2 bins (6u)  │  shelf later          │
+├────────────────────────────────┴───────────────────────┤
+│  tool holders: flush cutters, tweezers, screwdrivers   │  bottom
+└────────────────────────────────────────────────────────┘
+```
+
+- **`W-INBOX`:** new AliExpress parcels stand upright here until they're photographed and put away. In Part-DB it's a storage location too: parts captured but not yet sorted are found "in the inbox" instead of nowhere. Keep it nearly empty; it's a queue, not storage.
+- **`W-PROJECT`:** parts pulled from the Helmer for the current project. Move them in Part-DB when you take them out, and back when the project is done.
+- **Tools** hang on Multiboard hooks and holders; they aren't in the inventory.
+- **Labels go on the front of the bins** here: a tab on top is hard to read or scan at eye level.
+- **Locations** are named by role, not position: `Wall › W-INBOX` and `Wall › W-PROJECT`.
+
+A 2×4 shelf is about 17 cm wide, so two fit side by side in 35 cm if a second project shelf is needed later. Allow roughly 11–12 cm per shelf row so bins can be lifted out.
+
+### Wall print list
+
+| Part | Quantity |
+|---|---|
+| Multiboard Gridfinity shelf, 2×4 | 2 |
+| Bin 4×2, 10u (inbox) | 1 |
+| Bin 2×2, 6u (project) | 2 |
+| Item holder for P700 tape cassettes (Multiconnect generator) | 1 |
+| Tool holders | as needed |
+
+Ready-made shelves: [Multiboard Gridfinity Shelf](https://www.printables.com/model/866656-multiboard-gridfinity-shelf-multiple-sizes) (1×2 to 2×4). Custom sizes and holders: [Multiconnect Part Generator](https://makerworld.com/en/models/582260-multiconnect-part-generator-master-collection).
+
 ## Labels
 
 - One label per bin: QR code linking to the bin's storage location in Part-DB, plus the bin name (`D2-A1`).
@@ -126,13 +162,14 @@ Per drawer one **5×5** and one **5×4** baseplate (both fit the A1's 256 × 256
 
 ## Workflow
 
-1. **Put a part away:** open the capture app, scan the bin's label, photograph the part. The part is created with that bin as its storage location.
-2. **Find a part:** search in Part-DB or the capture app; the result names the bin.
-3. **Before ordering:** run the "do I already have it?" check; a hit names the bin.
+1. **Parcel arrives:** it goes into `W-INBOX` on the wall.
+2. **Put a part away:** open the capture app, scan the bin's label, photograph the part. The part is created with that bin as its storage location. No time to sort? Capture it into `W-INBOX` and move it later.
+3. **Find a part:** search in Part-DB or the capture app; the result names the bin.
+4. **Before ordering:** run the "do I already have it?" check; a hit names the bin.
 
 ## Open items
 
 - [ ] Measure inner width, depth and top-rim opening of a drawer; size spacers
-- [ ] Create the storage location tree in Part-DB (`Helmer › D1…D6 › bins`)
+- [ ] Create the storage location trees in Part-DB (`Helmer › D1…D6 › bins`, `Wall › W-INBOX / W-PROJECT`)
 - [ ] Bin labels: the capture API prints part labels today; storage-location labels are still missing
 - [ ] PWA: "scan bin, then photograph part" flow

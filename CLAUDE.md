@@ -18,7 +18,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Capture app:** ASP.NET Core minimal API (`capture-api/`, running) + React/Vite PWA (`capture-web/`, not built yet).
 - **Networking:** Tailscale everywhere. Host has Tailscale SSH; each service has its own Tailscale sidecar (`parts.<tailnet>.ts.net`). The Azure NSG has no inbound rules.
 - **Labels:** Brother P-touch P700 on a Raspberry Pi 3 at home (`homelab`), driven by `ptouch-print`; a small FastAPI print server (`print-server/`) in its own compose stack on the Pi (`~/apps/shelfie-print`), with a Tailscale sidecar at `labels.<tailnet>.ts.net`.
-- **Storage:** IKEA Helmer, 6 drawers (D1 top → D6 bottom), Gridfinity 5×9 grid per drawer, 90 mm usable height (max bin 10u). Bin = Part-DB storage location `Helmer › D2 › D2-A1`, named after its front-left cell. Plan and print list in `docs/storage.md`.
+- **Storage:** IKEA Helmer, 6 drawers (D1 top → D6 bottom), Gridfinity 5×9 grid per drawer, 90 mm usable height (max bin 10u). Bin = Part-DB storage location `Helmer › D2 › D2-A1`, named after its front-left cell. Plus a 35×35 cm Multiboard wall area for `W-INBOX` (new parcels) and `W-PROJECT`; plan and print list in `docs/storage.md`.
 - **Backups:** `scripts/backup.sh` (SQLite `.backup` + uploads) → rsync over Tailscale to a Synology DS218+.
 
 ## Decisions and why
