@@ -18,6 +18,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Capture app:** ASP.NET Core minimal API (`capture-api/`, running) + React/Vite PWA (`capture-web/`, not built yet).
 - **Networking:** Tailscale everywhere. Host has Tailscale SSH; each service has its own Tailscale sidecar (`parts.<tailnet>.ts.net`). The Azure NSG has no inbound rules.
 - **Labels:** Brother P-touch P700 on a Raspberry Pi 3 at home (`homelab`), driven by `ptouch-print`; a small FastAPI print server (`print-server/`) in its own compose stack on the Pi (`~/apps/shelfie-print`), with a Tailscale sidecar at `labels.<tailnet>.ts.net`.
+- **Storage:** IKEA Helmer, 6 drawers (D1 top → D6 bottom), Gridfinity 5×9 grid per drawer, 90 mm usable height (max bin 10u). Bin = Part-DB storage location `Helmer › D2 › D2-A1`, named after its front-left cell. Plan and print list in `docs/storage.md`.
 - **Backups:** `scripts/backup.sh` (SQLite `.backup` + uploads) → rsync over Tailscale to a Synology DS218+.
 
 ## Decisions and why
@@ -44,7 +45,9 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - [x] `vision/identify.py` tested with 8 real photos (2026-10-28): all parts identified; prompt tightened (fixed category list, bare chips vs. modules, no guessed parameters)
 - [x] Print server running on the Pi 3 (2026-10-28; redeploy after changes: rsync `print-server/` to `homelab:apps/shelfie-print/`, then `docker compose up -d --build` there) at `https://labels.tailf98c37.ts.net` (`/health`, `/labels/preview`, `/labels`, `/docs`); test label printed. Loaded tape: 9 mm (52 px), QR modules are 1 dot there but a phone scanned the test label fine (Part-DB URL, ~45 chars); keep URLs short
 - [x] Capture API (2026-10-28) at `https://capture.tailf98c37.ts.net`: identify → stock search → create part → print label (endpoints in docs/getting-started.md §7). Image `ghcr.io/roman-mueller-ch/shelfie-capture-api` (public) built by `.github/workflows/capture-api.yml`. Test data in Part-DB (everything named "ZZ Test …": parts 1–4, categories 1–2, manufacturer 1, storage location 1) still to delete; categories `Active → ICs → Sensors`, manufacturer Sensirion, footprint SMD and attachment type Photo are real and stay
+- [x] Storage plan (2026-10-28): `docs/storage.md`; drawer inner dimensions still to measure, nothing printed yet
 - [ ] **Next:** capture PWA (`capture-web/`)
+- [ ] Storage-location labels for bins (capture API prints part labels only) and creating the `Helmer` location tree in Part-DB
 - [ ] More prompt tuning as needed: passives, product-page screenshots untested
 
 Tailscale prep is done (MagicDNS, HTTPS certificates, two pre-approved one-time auth keys).
