@@ -54,7 +54,7 @@ It exists to solve one very specific problem:
 | Capture frontend | React + Vite PWA | served by the backend |
 | Vision | Azure OpenAI multimodal model, JSON-schema structured output | Azure |
 | Networking | Tailscale sidecar containers (HTTPS via `tailscale serve`) | Azure VM |
-| Print server | Python FastAPI, Pillow, `zint`, `ptouch-print` | Raspberry Pi 3 |
+| Print server | Python FastAPI, Pillow, `segno`, `ptouch-print`; docker compose + Tailscale sidecar | Raspberry Pi 3 |
 | Infrastructure | Terraform, cloud-init, Ubuntu 24.04 LTS | Azure |
 | Backups | nightly `sqlite3 .backup` + uploads, rsync over Tailscale | → Synology |
 | CI | GitHub Actions → GitHub Container Registry | GitHub |
@@ -67,7 +67,7 @@ shelfie-parts/
 ├── deploy/         # docker-compose.yml, Tailscale sidecar config, .env.example
 ├── capture-api/    # ASP.NET Core minimal API
 ├── capture-web/    # React + Vite PWA
-├── print-server/   # FastAPI print service for the Pi (+ systemd unit, udev rule)
+├── print-server/   # FastAPI print service for the Pi (own compose stack + Tailscale sidecar)
 ├── vision/         # vision prompt, JSON schema, identify.py test CLI
 ├── scripts/        # backup.sh
 └── docs/           # getting-started.md
@@ -88,8 +88,8 @@ shelfie-parts/
 - [x] Infrastructure: Terraform for the Azure VM and Azure OpenAI deployment
 - [x] Part-DB behind a Tailscale sidecar (docker compose)
 - [x] Vision prompt, JSON schema and `identify.py` test CLI
-- [ ] Vision prompt tested and tuned with real parts
-- [ ] Print server on the Raspberry Pi 3 (P700 via `ptouch-print`)
+- [x] Vision prompt tested and tuned with real parts
+- [x] Print server on the Raspberry Pi 3 (P700 via `ptouch-print`)
 - [ ] Capture API: identify → search → create → print
 - [ ] Capture PWA
 - [ ] "Do I already have it?" check from screenshots and AliExpress links

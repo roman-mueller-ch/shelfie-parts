@@ -17,7 +17,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Vision:** Azure OpenAI `gpt-5-mini` (version `2025-08-07`, GlobalStandard; retires 2027-02-09), called through the OpenAI-compatible v1 API so the provider is swappable.
 - **Capture app (not built yet):** ASP.NET Core minimal API (`capture-api/`) + React/Vite PWA (`capture-web/`).
 - **Networking:** Tailscale everywhere. Host has Tailscale SSH; each service has its own Tailscale sidecar (`parts.<tailnet>.ts.net`). The Azure NSG has no inbound rules.
-- **Labels:** Brother P-touch P700 on a Raspberry Pi 3 at home (`homelab`), driven by `ptouch-print`; a small FastAPI print server (`print-server/`, not built yet) reachable only over Tailscale.
+- **Labels:** Brother P-touch P700 on a Raspberry Pi 3 at home (`homelab`), driven by `ptouch-print`; a small FastAPI print server (`print-server/`) in its own compose stack on the Pi (`~/apps/shelfie-print`), with a Tailscale sidecar at `labels.<tailnet>.ts.net`.
 - **Backups:** `scripts/backup.sh` (SQLite `.backup` + uploads) → rsync over Tailscale to a Synology DS218+.
 
 ## Decisions and why
@@ -27,6 +27,8 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Not on the Pi 5:** it runs Umbrel with a Bitcoin node; don't mix.
 - **Visual Studio credits** are licensed for dev/test, have a spending limit (subscription suspends when exhausted) and end if Roman's job changes. Hence: off-Azure backups, no Marketplace or third-party-billed services (Claude via Foundry would not be covered), keep it movable.
 - **Part-DB base currency:** CHF (cannot change after first prices).
+- **Print server in Docker, not systemd:** `sudo` on the Pi needs a password, and Docker keeps it like the VM stack (sidecar, no LAN exposure). The container runs as root to open the USB printer without a host udev rule.
+- **ptouch-print built from a mirror:** not packaged in Debian 13; upstream's git server (git.familie-radermacher.ch) serves an incomplete repo over dumb HTTP and has no tarballs. The Dockerfile clones `git.pfzetto.de/mirror/ptouch-print` pinned to v1.9's commit `02be73c`, identical to upstream's tag.
 
 ## Status (2026-10-28)
 
@@ -35,8 +37,9 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - [x] `terraform apply` (2026-10-27): VM up, cloud-init done, `shelfie-vm` on the tailnet; Azure OpenAI `oai-shelfie-xv86jc` with `gpt-5-mini` deployed
 - [x] Compose stack deployed to `/srv/shelfie` on the VM (2026-10-27); Part-DB at `https://parts.tailf98c37.ts.net`
 - [x] `vision/identify.py` tested with 8 real photos (2026-10-28): all parts identified; prompt tightened (fixed category list, bare chips vs. modules, no guessed parameters)
-- [ ] **Next:** print server on the Pi 3 (more prompt tuning as needed: passives, product-page screenshots untested)
-- [ ] Capture API, then PWA
+- [x] Print server running on the Pi 3 (2026-10-28) at `https://labels.tailf98c37.ts.net` (`/health`, `/labels/preview`, `/labels`, `/docs`); test label printed. Loaded tape: 9 mm (52 px), QR modules are 1 dot there but a phone scanned the test label fine (Part-DB URL, ~45 chars); keep URLs short
+- [ ] **Next:** capture API (more prompt tuning as needed: passives, product-page screenshots untested)
+- [ ] Capture PWA
 
 Tailscale prep is done (MagicDNS, HTTPS certificates, two pre-approved one-time auth keys).
 

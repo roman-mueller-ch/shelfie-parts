@@ -97,6 +97,38 @@ crontab -e
 # 15 3 * * * SHELFIE_BACKUP_TARGET=roman@synology:/volume1/backup/shelfie /srv/shelfie/scripts/backup.sh >> /srv/shelfie/backup.log 2>&1
 ```
 
+## 6. Label printer (Raspberry Pi)
+
+The print server runs as its own small compose stack on the Pi the Brother P-touch is plugged into, with a Tailscale sidecar at `https://labels.<tailnet>.ts.net`.
+
+1. Plug the P700 in via USB and switch it on. The **P-Lite LED must be off** (hold the P-Lite button ~2 s); otherwise it shows up as a USB drive instead of a printer. `lsusb` should list `04f9:2061`.
+2. Generate another Tailscale auth key (not reusable, pre-approved) for `labels`.
+3. From the Mac:
+
+   ```bash
+   rsync -a --exclude data --exclude .env ~/Projects/shelfie-parts/print-server/ homelab:apps/shelfie-print/
+   ```
+
+4. On the Pi:
+
+   ```bash
+   cd ~/apps/shelfie-print
+   cp .env.example .env && nano .env     # TS_AUTHKEY_LABELS
+   docker compose up -d --build          # first build compiles ptouch-print, ~5–10 min on a Pi 3
+   ```
+
+5. Test from any tailnet device:
+
+   ```bash
+   curl https://labels.<tailnet>.ts.net/health
+   curl -X POST https://labels.<tailnet>.ts.net/labels/preview -H 'content-type: application/json' \
+     -d '{"title": "ESP32-C3 SuperMini", "subtitle": "Box 4", "url": "https://parts.<tailnet>.ts.net/"}' -o label.png
+   curl -X POST https://labels.<tailnet>.ts.net/labels -H 'content-type: application/json' \
+     -d '{"title": "Hello Shelfie", "url": "https://parts.<tailnet>.ts.net/"}'
+   ```
+
+   Interactive API docs: `https://labels.<tailnet>.ts.net/docs`.
+
 ## Moving away from Azure
 
 1. Run `scripts/backup.sh` one last time.
