@@ -55,7 +55,7 @@
           "category_path": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Category from general to specific, e.g. [\"Modules\", \"Power\", \"Battery chargers\"]."
+            "description": "Category from general to specific, e.g. [\"Modules\", \"Power\"]; must be one of the paths listed in the prompt."
           },
           "mpn": {
             "type": ["string", "null"],

@@ -28,15 +28,14 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Visual Studio credits** are licensed for dev/test, have a spending limit (subscription suspends when exhausted) and end if Roman's job changes. Hence: off-Azure backups, no Marketplace or third-party-billed services (Claude via Foundry would not be covered), keep it movable.
 - **Part-DB base currency:** CHF (cannot change after first prices).
 
-## Status (2026-10-27)
+## Status (2026-10-28)
 
 - [x] Repo, README, Terraform (`infra/`), compose stack (`deploy/`), vision prompt/schema/CLI (`vision/`), backup script, getting-started guide
 - [x] On Roman's Mac: `terraform init`, `terraform validate`, `terraform plan` succeed
 - [x] `terraform apply` (2026-10-27): VM up, cloud-init done, `shelfie-vm` on the tailnet; Azure OpenAI `oai-shelfie-xv86jc` with `gpt-5-mini` deployed
 - [x] Compose stack deployed to `/srv/shelfie` on the VM (2026-10-27); Part-DB at `https://parts.tailf98c37.ts.net`
-- [ ] **Next:** test `vision/identify.py` (docs/getting-started.md §4)
-- [ ] Tune `vision/prompt.md` with real parts
-- [ ] Print server on the Pi 3
+- [x] `vision/identify.py` tested with 8 real photos (2026-10-28): all parts identified; prompt tightened (fixed category list, bare chips vs. modules, no guessed parameters)
+- [ ] **Next:** print server on the Pi 3 (more prompt tuning as needed: passives, product-page screenshots untested)
 - [ ] Capture API, then PWA
 
 Tailscale prep is done (MagicDNS, HTTPS certificates, two pre-approved one-time auth keys).

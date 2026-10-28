@@ -16,18 +16,53 @@ Answer only with JSON matching the provided schema.
 5. **Product pages**: listing titles are keyword soup. Extract the actual product, ignore marketing words ("Hot sale", "1PCS", "for Arduino"), and use the selected variant if one is shown. Use the pack size for `quantity_estimate`.
 6. **Multiple parts**: one `items` entry per distinct part type. Identical parts are one entry with a quantity.
 7. **Clones and variants**: if a part is commonly sold in look-alike variants (e.g. CH340 vs CP2102 USB adapters, different flash sizes), say which one you see and mention the ambiguity in `notes`.
+8. **Bare chips vs. modules**: a bag labelled "SMD", "DIP" or with a chip package means bare components, not a breakout board. A sensor chip sold bare goes under Active › ICs › Sensors; the same chip on a PCB with pins goes under Modules › Sensor.
+9. **Parameters are facts, not guesses.** Only list `key_parameters` that are printed or certain for this part. Leave out anything unknown or estimated instead of writing "unknown", "likely", "about", "estimate" or "not printed"; mention it in `notes` if a human should measure it. Keep `value` to the bare value and put the unit in `unit` (value "50", unit "kg"), or `unit` null for text values (value "I2C").
+10. **Notes are for checks, not stories.** Say what a human should verify (a variant, a missing marking). Don't speculate about where the part came from or what it was used for.
 
 ## Categories
 
-Use a short `category_path` from general to specific, preferring these top levels so the inventory stays consistent:
+`category_path` must be one of the paths below, copied exactly. Pick the closest one; do not add your own levels. Put finer detail (e.g. "load cell", "IMU") in `name` and `key_parameters` instead.
 
-- Active: ICs → Microcontrollers, Power management, Interface, Logic, Memory, Amplifiers, Sensors
-- Modules: Sensor, Power, Communication, Display, Motor drivers, Audio, Other
+Each line is one allowed path; `category_path` is its parts as a list (e.g. ["Active", "ICs", "Sensors"]).
+
+- Active › ICs › Microcontrollers
+- Active › ICs › Power management
+- Active › ICs › Interface
+- Active › ICs › Logic
+- Active › ICs › Memory
+- Active › ICs › Amplifiers
+- Active › ICs › Sensors
+- Active › ICs › ADCs
+- Modules › Sensor
+- Modules › Power
+- Modules › Communication
+- Modules › Display
+- Modules › Motor drivers
+- Modules › Audio
+- Modules › Other
 - Dev boards
-- Passive: Resistors, Capacitors, Inductors, Crystals
-- Discrete: Diodes, LEDs, Transistors, MOSFETs
-- Electromechanical: Switches, Buttons, Relays, Motors, Buzzers
-- Connectors, Cables, Power supplies, Mechanical, Tools
+- Passive › Resistors
+- Passive › Capacitors
+- Passive › Inductors
+- Passive › Crystals
+- Discrete › Diodes
+- Discrete › LEDs
+- Discrete › Transistors
+- Discrete › MOSFETs
+- Electromechanical › Switches
+- Electromechanical › Buttons
+- Electromechanical › Relays
+- Electromechanical › Motors
+- Electromechanical › Buzzers
+- Electromechanical › Speakers
+- Connectors
+- Cables
+- Power supplies
+- Mechanical
+- Tools
+
+Sensors, load cells and the amplifier/ADC boards that come with them (e.g. HX711) are Modules › Sensor; a Raspberry Pi HAT or display board is a module, not a dev board.
 
 ## Confidence
 
