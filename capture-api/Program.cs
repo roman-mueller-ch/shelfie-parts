@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CaptureApi;
+using CaptureApi.Labels;
 using CaptureApi.PartDb;
 using CaptureApi.Vision;
 
@@ -16,7 +17,9 @@ builder.Services.AddSingleton(json);
 builder.Services.Configure<VisionOptions>(builder.Configuration.GetSection("Vision"));
 builder.Services.Configure<PartDbOptions>(builder.Configuration.GetSection("PartDb"));
 builder.Services.AddSingleton<VisionClient>();
+builder.Services.Configure<PrintServerOptions>(builder.Configuration.GetSection("PrintServer"));
 builder.Services.AddHttpClient<PartDbClient>();
+builder.Services.AddHttpClient<LabelPrinter>();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
@@ -95,6 +98,39 @@ app.MapPost("/api/parts", async (HttpRequest http, PartDbClient partDb, JsonSeri
         return Results.Problem(e.Message, statusCode: 502);
     }
 }).DisableAntiforgery();
+
+// Print the part's QR label on the P-touch. Body optional: {"title", "subtitle", "copies"}.
+app.MapPost("/api/parts/{id:int}/label", async (int id, LabelRequest? overrides,
+    PartDbClient partDb, LabelPrinter printer, CancellationToken ct) =>
+{
+    var label = await partDb.GetLabelAsync(id, overrides ?? new(), ct);
+    if (label is null) return Results.Problem($"Part {id} not found.", statusCode: 404);
+    try
+    {
+        using var result = await printer.PrintAsync(label, ct);
+        return Results.Ok(new { label, printer = result.RootElement.Clone() });
+    }
+    catch (Exception e) when (e is PrintServerException or HttpRequestException or TaskCanceledException)
+    {
+        return Results.Problem($"Printing failed: {e.Message}", statusCode: 502);
+    }
+});
+
+// The same label as PNG, without printing (for the PWA).
+app.MapGet("/api/parts/{id:int}/label.png", async (int id, string? title, string? subtitle,
+    PartDbClient partDb, LabelPrinter printer, CancellationToken ct) =>
+{
+    var label = await partDb.GetLabelAsync(id, new(title, subtitle), ct);
+    if (label is null) return Results.Problem($"Part {id} not found.", statusCode: 404);
+    try
+    {
+        return Results.File(await printer.PreviewAsync(label, ct), "image/png");
+    }
+    catch (Exception e) when (e is PrintServerException or HttpRequestException or TaskCanceledException)
+    {
+        return Results.Problem($"Preview failed: {e.Message}", statusCode: 502);
+    }
+});
 
 app.Run();
 

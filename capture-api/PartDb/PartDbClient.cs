@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using CaptureApi.Labels;
 using CaptureApi.Vision;
 using Microsoft.Extensions.Options;
 
@@ -121,6 +122,30 @@ public sealed class PartDbClient
         }
 
         return new CreatedPart(id, request.Name.Trim(), $"{_baseUrl}/en/part/{id}", $"{_baseUrl}/scan/part/{id}", photos.Count);
+    }
+
+    /// <summary>Label text for a part: MPN (or name) as title, storage location (or name) as subtitle.</summary>
+    public async Task<LabelContent?> GetLabelAsync(int id, LabelRequest overrides, CancellationToken ct)
+    {
+        using var response = await _http.GetAsync($"parts/{id}", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        if (!response.IsSuccessStatusCode) throw new PartDbException($"Part-DB {(int)response.StatusCode} for GET parts/{id}");
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+        var part = doc.RootElement;
+
+        var name = Str(part, "name") ?? $"Part {id}";
+        var mpn = NullIfEmpty(Str(part, "manufacturer_product_number"));
+        var location = part.TryGetProperty("partLots", out var lots) && lots.ValueKind == JsonValueKind.Array
+            ? lots.EnumerateArray()
+                .Select(l => l.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "full_path") : null)
+                .OfType<string>().FirstOrDefault()?.Replace(" → ", " / ")
+            : null;
+
+        return new LabelContent(
+            NullIfEmpty(overrides.Title) ?? mpn ?? name,
+            NullIfEmpty(overrides.Subtitle) ?? location ?? (mpn is null ? null : name),
+            $"{_baseUrl}/scan/part/{id}",
+            Math.Clamp(overrides.Copies, 1, 20));
     }
 
     /// <summary>
