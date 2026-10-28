@@ -90,7 +90,7 @@ shelfie-parts/
 - [x] Vision prompt, JSON schema and `identify.py` test CLI
 - [x] Vision prompt tested and tuned with real parts
 - [x] Print server on the Raspberry Pi 3 (P700 via `ptouch-print`)
-- [ ] Capture API: identify → search → create → print
+- [x] Capture API: identify → search → create → print
 - [ ] Capture PWA
 - [ ] "Do I already have it?" check from screenshots and AliExpress links
 - [x] Backup script (SQLite snapshot + uploads → rsync)

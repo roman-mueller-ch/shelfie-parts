@@ -45,10 +45,11 @@ docker version
 
 ## 3. Deploy the stack
 
-From the Mac, copy the repo to the VM (the repo is private, so this avoids setting up GitHub credentials there):
+From the Mac, copy the repo to the VM (keeps local changes and needs no git on the VM; secrets and Terraform state stay behind):
 
 ```bash
-rsync -a --exclude '.git' --exclude 'deploy/data' --exclude '.env' \
+rsync -a --exclude '.git' --exclude 'deploy/data' --exclude '.env' --exclude 'infra/.terraform' \
+  --exclude 'terraform.tfvars' --exclude '*.tfstate*' --exclude 'bin' --exclude 'obj' --exclude 'vision/results' \
   ~/Projects/shelfie-parts/ roman@shelfie-vm:/srv/shelfie/
 ```
 
@@ -128,6 +129,31 @@ The print server runs as its own small compose stack on the Pi the Brother P-tou
    ```
 
    Interactive API docs: `https://labels.<tailnet>.ts.net/docs`.
+
+## 7. Capture API
+
+The capture API runs in the VM stack (`capture-api` + `ts-capture` sidecar) at `https://capture.<tailnet>.ts.net`. Its image is built by GitHub Actions on every push to `capture-api/` or the vision prompt/schema and published to `ghcr.io/roman-mueller-ch/shelfie-capture-api` (public, like the repo).
+
+1. Part-DB: **System → Users → admin → Permissions → API**: set *Access API* and *Manage API tokens* to Allow (off by default). Then **User settings → API tokens**: create `capture-api` with access level *Edit*, no expiry.
+2. Generate a Tailscale auth key for `capture` (not reusable, pre-approved).
+3. Fill in the `# --- Capture API` block of `deploy/.env` on the VM (see `.env.example`), then `docker compose up -d`.
+4. Test:
+
+   ```bash
+   curl https://capture.<tailnet>.ts.net/api/health
+   curl -X POST https://capture.<tailnet>.ts.net/api/identify -F images=@part.jpg
+   ```
+
+Update after a new image: `docker compose pull capture-api && docker compose up -d capture-api`.
+
+For local development (`dotnet run` in `capture-api/`), the secrets go into `dotnet user-secrets`: `Vision:BaseUrl`, `Vision:ApiKey`, `PartDb:ApiToken`.
+
+| Endpoint | |
+|---|---|
+| `POST /api/identify` | multipart `images` (1–4) + optional `hint` → identification + matching parts in stock |
+| `POST /api/parts` | multipart `part` (JSON) + optional `photos` → creates the part with stock lot, parameters, photos |
+| `POST /api/parts/{id}/label` | prints the QR label; optional JSON `{title, subtitle, copies}` |
+| `GET /api/parts/{id}/label.png` | label preview |
 
 ## Moving away from Azure
 

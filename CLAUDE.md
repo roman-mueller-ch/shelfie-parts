@@ -15,7 +15,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Inventory:** Part-DB (official `jbtronics/part-db1` image), SQLite, in docker compose.
 - **Host:** small Azure VM (Ubuntu 24.04, `Standard_B1ms`, Switzerland North), paid from Roman's $50/month Visual Studio Professional credits.
 - **Vision:** Azure OpenAI `gpt-5-mini` (version `2025-08-07`, GlobalStandard; retires 2027-02-09), called through the OpenAI-compatible v1 API so the provider is swappable.
-- **Capture app (not built yet):** ASP.NET Core minimal API (`capture-api/`) + React/Vite PWA (`capture-web/`).
+- **Capture app:** ASP.NET Core minimal API (`capture-api/`, running) + React/Vite PWA (`capture-web/`, not built yet).
 - **Networking:** Tailscale everywhere. Host has Tailscale SSH; each service has its own Tailscale sidecar (`parts.<tailnet>.ts.net`). The Azure NSG has no inbound rules.
 - **Labels:** Brother P-touch P700 on a Raspberry Pi 3 at home (`homelab`), driven by `ptouch-print`; a small FastAPI print server (`print-server/`) in its own compose stack on the Pi (`~/apps/shelfie-print`), with a Tailscale sidecar at `labels.<tailnet>.ts.net`.
 - **Backups:** `scripts/backup.sh` (SQLite `.backup` + uploads) → rsync over Tailscale to a Synology DS218+.
@@ -30,6 +30,8 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Print server in Docker, not systemd:** `sudo` on the Pi needs a password, and Docker keeps it like the VM stack (sidecar, no LAN exposure). The container runs as root to open the USB printer without a host udev rule.
 - **Capture API sends photos as uploaded** (JPEG/PNG/WebP/GIF, sniffed by magic bytes), no server-side resizing: the model downscales itself (same token count), the PWA will resize/convert HEIC in the browser. ImageSharp 4 needs a paid license key for Release builds, SkiaSharp is an 87 MB download that failed over ProtonVPN.
 - **Part-DB API quirk:** send JSON bodies with Content-Length (`StringContent`), not chunked (`PostAsJsonAsync`); Part-DB intermittently sees an empty body and answers 400 "Syntax error". Part-DB doesn't validate attachment file types, so the capture API checks photos itself.
+- **The GitHub repo is public** (so is the GHCR image; the VM pulls it without credentials). Never commit secrets; the tailnet name `tailf98c37` is in the repo, which is acceptable.
+- **Tailnet names from inside containers:** the `ts-capture` sidecar has `TS_ACCEPT_DNS=true`, so the API resolves `parts.`/`labels.<tailnet>.ts.net`.
 - **Capture API secrets in dev:** `dotnet user-secrets` (`Vision:BaseUrl`, `Vision:ApiKey`, `PartDb:ApiToken`). The Part-DB `admin` user needed *API → Access API / Manage API tokens* set to Allow (off by default). Token `capture-api`, edit level.
 - **ptouch-print built from a mirror:** not packaged in Debian 13; upstream's git server (git.familie-radermacher.ch) serves an incomplete repo over dumb HTTP and has no tarballs. The Dockerfile clones `git.pfzetto.de/mirror/ptouch-print` pinned to v1.9's commit `02be73c`, identical to upstream's tag.
 
@@ -41,9 +43,9 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - [x] Compose stack deployed to `/srv/shelfie` on the VM (2026-10-27); Part-DB at `https://parts.tailf98c37.ts.net`
 - [x] `vision/identify.py` tested with 8 real photos (2026-10-28): all parts identified; prompt tightened (fixed category list, bare chips vs. modules, no guessed parameters)
 - [x] Print server running on the Pi 3 (2026-10-28; redeploy after changes: rsync `print-server/` to `homelab:apps/shelfie-print/`, then `docker compose up -d --build` there) at `https://labels.tailf98c37.ts.net` (`/health`, `/labels/preview`, `/labels`, `/docs`); test label printed. Loaded tape: 9 mm (52 px), QR modules are 1 dot there but a phone scanned the test label fine (Part-DB URL, ~45 chars); keep URLs short
-- [ ] **In progress:** capture API (`capture-api/`, .NET 10). Done and tested locally: `POST /api/identify` (photos → vision → Part-DB stock search), `POST /api/parts` (multipart `part` JSON + `photos`; finds or creates category/manufacturer/footprint/storage location by name, adds stock lot, parameters, photos; deletes the part again if a later step fails), `POST /api/parts/{id}/label` and `GET /api/parts/{id}/label.png` (QR with `/scan/part/{id}`, title = MPN or name, subtitle = storage location; test label printed). Next: Dockerfile + GHCR + deploy on the VM with a `capture` sidecar. Test data in Part-DB (everything named "ZZ Test …", parts 1–4) to delete when done; categories `Active → ICs → Sensors`, manufacturer Sensirion, footprint SMD and attachment type Photo are real and stay
+- [x] Capture API (2026-10-28) at `https://capture.tailf98c37.ts.net`: identify → stock search → create part → print label (endpoints in docs/getting-started.md §7). Image `ghcr.io/roman-mueller-ch/shelfie-capture-api` (public) built by `.github/workflows/capture-api.yml`. Test data in Part-DB (everything named "ZZ Test …": parts 1–4, categories 1–2, manufacturer 1, storage location 1) still to delete; categories `Active → ICs → Sensors`, manufacturer Sensirion, footprint SMD and attachment type Photo are real and stay
+- [ ] **Next:** capture PWA (`capture-web/`)
 - [ ] More prompt tuning as needed: passives, product-page screenshots untested
-- [ ] Capture PWA
 
 Tailscale prep is done (MagicDNS, HTTPS certificates, two pre-approved one-time auth keys).
 
