@@ -29,6 +29,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Part-DB base currency:** CHF (cannot change after first prices).
 - **Print server in Docker, not systemd:** `sudo` on the Pi needs a password, and Docker keeps it like the VM stack (sidecar, no LAN exposure). The container runs as root to open the USB printer without a host udev rule.
 - **Capture API sends photos as uploaded** (JPEG/PNG/WebP/GIF, sniffed by magic bytes), no server-side resizing: the model downscales itself (same token count), the PWA will resize/convert HEIC in the browser. ImageSharp 4 needs a paid license key for Release builds, SkiaSharp is an 87 MB download that failed over ProtonVPN.
+- **Part-DB API quirk:** send JSON bodies with Content-Length (`StringContent`), not chunked (`PostAsJsonAsync`); Part-DB intermittently sees an empty body and answers 400 "Syntax error". Part-DB doesn't validate attachment file types, so the capture API checks photos itself.
 - **Capture API secrets in dev:** `dotnet user-secrets` (`Vision:BaseUrl`, `Vision:ApiKey`, `PartDb:ApiToken`). The Part-DB `admin` user needed *API → Access API / Manage API tokens* set to Allow (off by default). Token `capture-api`, edit level.
 - **ptouch-print built from a mirror:** not packaged in Debian 13; upstream's git server (git.familie-radermacher.ch) serves an incomplete repo over dumb HTTP and has no tarballs. The Dockerfile clones `git.pfzetto.de/mirror/ptouch-print` pinned to v1.9's commit `02be73c`, identical to upstream's tag.
 
@@ -40,7 +41,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - [x] Compose stack deployed to `/srv/shelfie` on the VM (2026-10-27); Part-DB at `https://parts.tailf98c37.ts.net`
 - [x] `vision/identify.py` tested with 8 real photos (2026-10-28): all parts identified; prompt tightened (fixed category list, bare chips vs. modules, no guessed parameters)
 - [x] Print server running on the Pi 3 (2026-10-28) at `https://labels.tailf98c37.ts.net` (`/health`, `/labels/preview`, `/labels`, `/docs`); test label printed. Loaded tape: 9 mm (52 px), QR modules are 1 dot there but a phone scanned the test label fine (Part-DB URL, ~45 chars); keep URLs short
-- [ ] **In progress:** capture API (`capture-api/`, .NET 10). Done: `POST /api/identify` (photos → vision → Part-DB stock search), tested locally. Next: create part, print label, Dockerfile + GHCR + deploy on the VM with a `capture` sidecar. Test data in Part-DB (category/location/part named "ZZ Test …", id 1) to delete when done
+- [ ] **In progress:** capture API (`capture-api/`, .NET 10). Done and tested locally: `POST /api/identify` (photos → vision → Part-DB stock search), `POST /api/parts` (multipart `part` JSON + `photos`; finds or creates category/manufacturer/footprint/storage location by name, adds stock lot, parameters, photos; deletes the part again if a later step fails). Next: print label, Dockerfile + GHCR + deploy on the VM with a `capture` sidecar. Test data in Part-DB (everything named "ZZ Test …", parts 1–4) to delete when done; categories `Active → ICs → Sensors`, manufacturer Sensirion, footprint SMD and attachment type Photo are real and stay
 - [ ] More prompt tuning as needed: passives, product-page screenshots untested
 - [ ] Capture PWA
 

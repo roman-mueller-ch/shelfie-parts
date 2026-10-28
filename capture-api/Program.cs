@@ -58,6 +58,44 @@ app.MapPost("/api/identify", async (IFormFileCollection images, [Microsoft.AspNe
     }
 }).DisableAntiforgery();
 
+// Reviewed part in, created Part-DB part out. Multipart: "part" (JSON, see CreatePartRequest) + optional "photos".
+app.MapPost("/api/parts", async (HttpRequest http, PartDbClient partDb, JsonSerializerOptions json, CancellationToken ct) =>
+{
+    if (!http.HasFormContentType)
+        return Results.Problem("Send multipart/form-data with a 'part' JSON field and optional 'photos'.", statusCode: 415);
+    var form = await http.ReadFormAsync(ct);
+
+    CreatePartRequest? request;
+    try { request = JsonSerializer.Deserialize<CreatePartRequest>(form["part"].ToString(), json); }
+    catch (JsonException e) { return Results.Problem($"Invalid 'part' JSON: {e.Message}", statusCode: 400); }
+    if (request is null) return Results.Problem("Missing 'part' field.", statusCode: 400);
+
+    var files = form.Files.GetFiles("photos");
+    if (files.Count > 4 || files.Any(f => f.Length > MaxImageBytes))
+        return Results.Problem("Send up to 4 photos, each smaller than 20 MB.", statusCode: 413);
+    if (request.Quantity < 0)
+        return Results.Problem("Quantity can't be negative.", statusCode: 400);
+    var photos = new List<(string, BinaryData)>();
+    foreach (var f in files)
+    {
+        await using var s = f.OpenReadStream();
+        var data = await BinaryData.FromStreamAsync(s, ct);
+        if (ImageTypes.Sniff(data.ToMemory().Span) is null)
+            return Results.Problem($"'{f.FileName}' is not a JPEG, PNG, WebP or GIF image.", statusCode: 415);
+        photos.Add((Path.GetFileName(f.FileName), data));
+    }
+
+    try
+    {
+        var created = await partDb.CreatePartAsync(request, photos, ct);
+        return Results.Created(created.Url, created);
+    }
+    catch (PartDbException e)
+    {
+        return Results.Problem(e.Message, statusCode: 502);
+    }
+}).DisableAntiforgery();
+
 app.Run();
 
 partial class Program
