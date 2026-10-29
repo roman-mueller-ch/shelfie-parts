@@ -5,9 +5,11 @@ Physical layout of the inventory. Every bin is a storage location in Part-DB, wi
 ## The cabinet
 
 - **IKEA Helmer**, 6 drawers, numbered **D1 (top) to D6 (bottom)**.
-- **Inside of a drawer: 235 × 365 × 85 mm** (width × depth × height), measured 2026-10-29.
-- **Grid per drawer: 5 × 8 units** (210 × 336 mm), 5 across the front, 8 deep.
-- **Margin:** 25 mm in width, 29 mm in depth. Fill it with padding on the baseplates (see Print list): 12.5 mm left and right, 29 mm at the back.
+- **Inside of a drawer: 235 × 380 × 85 mm** (width × depth × height), measured 2026-10-29.
+- **Grid per drawer: 5 × 9 units** (210 × 378 mm), 5 across the front, 9 deep.
+- **Margin:** 25 mm in width, filled with padding on the baseplates (12.5 mm left and right). In depth only **2 mm** are left, so the grid fills the drawer front to back.
+
+> **2 mm is tight.** Before printing the second baseplate, measure the depth again at the floor along both side walls, and check the corners: if the drawer's corners are rounded or have a seam, the baseplate's corner needs to clear it. If 378 mm doesn't fit, fall back to 8 rows and 44 mm of padding at the back.
 
 ### Height budget
 
@@ -27,9 +29,9 @@ Bins that should also work on the wall stay at 9u or lower.
 
 ## Naming
 
-- **Columns A–E** from left to right, **rows 1–8** from front to back.
-- **A bin is named after its front-left cell:** the 2×4 bin covering A1–B4 in drawer 2 is **`D2-A1`**.
-- **Compartments** of a divided bin get a suffix, counted left to right, then front to back: `D1-A1.1` to `D1-A1.8` in a 2×4 bin with eight compartments.
+- **Columns A–E** from left to right, **rows 1–9** from front to back.
+- **A bin is named after its front-left cell:** the 2×3 bin covering A1–B3 in drawer 2 is **`D2-A1`**.
+- **Compartments** of a divided bin get a suffix, counted left to right, then front to back: `D1-A1.1` to `D1-A1.6` in a 2×3 bin with six compartments.
 - **In Part-DB** the storage location tree is `Helmer › D2 › D2-A1`. The leaf name is unique on its own, which keeps the 9 mm labels short.
 
 Names describe positions, not contents. When a bin's contents change, only Part-DB changes; the label stays.
@@ -40,41 +42,44 @@ A starting allocation. Swap drawers around as the collection grows; the layouts 
 
 | Drawer | Contents | Bins |
 |---|---|---|
-| D1 | Small loose parts: ICs, crystals, LEDs, buttons | 4 × 2×4 3u (8 compartments), 2 × 1×4 3u (4 compartments) |
-| D2 | Bagged parts | 4 × 2×4 9u, 2 × 1×4 9u |
-| D3 | Bagged parts | 4 × 2×4 9u, 2 × 1×4 9u |
-| D4 | Modules and sensors | 8 × 2×2 6u, 2 × 1×4 6u |
-| D5 | Dev boards and displays | 4 × 2×4 6u, 2 × 1×4 6u |
-| D6 | Cables, wire, tools | 2 × 3×4 9u, 2 × 2×4 9u |
+| D1 | Small loose parts: ICs, crystals, LEDs, buttons | 6 × 2×3 3u (6 compartments), 3 × 1×3 3u (3 compartments) |
+| D2 | Bagged parts | 6 × 2×3 9u, 3 × 1×3 9u |
+| D3 | Bagged parts | 6 × 2×3 9u, 3 × 1×3 9u |
+| D4 | Modules and sensors | 8 × 2×2 6u, 3 × 1×3 6u, 2 × 2×1 6u |
+| D5 | Dev boards and displays | 6 × 2×3 6u, 3 × 1×3 6u |
+| D6 | Cables, wire, tools | 3 × 3×3 9u, 3 × 2×3 9u |
 
-**No 1×1 bins.** The smallest bins are 2×2 and 1×4. Small loose parts go into compartments of larger bins instead: D1 offers 40 compartments in only 6 bins. Use 1×1 bins only for something that really needs its own box.
+**No 1×1 bins.** The smallest bins are 2×1 and 1×3. Small loose parts go into compartments of larger bins instead: D1 offers 45 compartments, the same as 45 single bins, but only 9 bins to print and handle. Use 1×1 bins only for something that really needs its own box.
 
-Most AliExpress stock arrives in small zip bags, so two drawers are reserved for them. Keep parts in their bags and stand the bags upright in the 2×4 bins like index cards, front to back. One 2×4 bin holds roughly 20–35 bags.
+Most AliExpress stock arrives in small zip bags, so two drawers are reserved for them. Keep parts in their bags and stand the bags upright in the 2×3 bins like index cards, front to back. One 2×3 bin holds roughly 15–25 bags.
 
 ### Layouts
 
 Front of the drawer at the bottom of each grid.
 
-**D1, D2, D3 and D5** share one layout. D1 uses it at 3u with compartments (eight per 2×4 bin, four per 1×4 bin), D2 and D3 at 9u for bags, D5 at 6u for dev boards.
+**D1, D2, D3 and D5** share one layout. D1 uses it at 3u with compartments (six per 2×3 bin, three per 1×3 bin), D2 and D3 at 9u for bags, D5 at 6u for dev boards.
 ```
-row 5–8 │  A5 (2×4)  │  C5 (2×4)  │ E5 (1×4) │
-row 1–4 │  A1 (2×4)  │  C1 (2×4)  │ E1 (1×4) │
+row 7–9 │  A7 (2×3)  │  C7 (2×3)  │ E7 (1×3) │
+row 4–6 │  A4 (2×3)  │  C4 (2×3)  │ E4 (1×3) │
+row 1–3 │  A1 (2×3)  │  C1 (2×3)  │ E1 (1×3) │
              A    B       C    D       E
 ```
 
 **D4: modules and sensors**
 ```
-row 7–8 │  A7 (2×2) │  C7 (2×2) │ E5 (1×4) │
-row 5–6 │  A5 (2×2) │  C5 (2×2) │ rows 5–8 │
-row 3–4 │  A3 (2×2) │  C3 (2×2) │ E1 (1×4) │
-row 1–2 │  A1 (2×2) │  C1 (2×2) │ rows 1–4 │
-             A    B      C    D       E
+columns A–D                          column E
+row 9   │  A9 (2×1) │  C9 (2×1) │    rows 7–9  │ E7 (1×3) │
+row 7–8 │  A7 (2×2) │  C7 (2×2) │    rows 4–6  │ E4 (1×3) │
+row 5–6 │  A5 (2×2) │  C5 (2×2) │    rows 1–3  │ E1 (1×3) │
+row 3–4 │  A3 (2×2) │  C3 (2×2) │
+row 1–2 │  A1 (2×2) │  C1 (2×2) │
 ```
 
 **D6: cables, wire, tools**
 ```
-row 5–8 │   A5 (3×4)    │  D5 (2×4)  │
-row 1–4 │   A1 (3×4)    │  D1 (2×4)  │
+row 7–9 │   A7 (3×3)    │  D7 (2×3)  │
+row 4–6 │   A4 (3×3)    │  D4 (2×3)  │
+row 1–3 │   A1 (3×3)    │  D1 (2×3)  │
              A   B   C      D    E
 ```
 
@@ -82,33 +87,34 @@ row 1–4 │   A1 (3×4)    │  D1 (2×4)  │
 
 ### Baseplates
 
-Per drawer **two 5×4 baseplates** (each 210 × 168 mm before padding, well inside the A1's 256 × 256 mm bed). Most generators can add padding to a baseplate; use it instead of separate spacers:
+Per drawer one **5×5** and one **5×4** baseplate, both with **12.5 mm padding left and right** (most generators can add padding; no separate spacers needed):
 
-| Piece | Grid | Padding | Outer size |
-|---|---|---|---|
-| Front | 5×4 | 12.5 mm left and right | 235 × 168 mm |
-| Back | 5×4 | 12.5 mm left and right, 29 mm at the back | 235 × 197 mm |
+| Piece | Grid | Outer size |
+|---|---|---|
+| Front | 5×5 | 235 × 210 mm |
+| Back | 5×4 | 235 × 168 mm |
 
-Magnets aren't needed; bins in a drawer don't slide. For all six drawers: 6 front and 6 back pieces.
+Both fit the A1's 256 × 256 mm bed. Magnets aren't needed; bins in a drawer don't slide. For all six drawers: 6 front and 6 back pieces.
 
 ### Bins
 
 | Size | Height | Quantity | Drawers |
 |---|---|---|---|
-| 2×4, 8 compartments | 3u | 4 | D1 |
-| 1×4, 4 compartments | 3u | 2 | D1 |
+| 2×3, 6 compartments | 3u | 6 | D1 |
+| 1×3, 3 compartments | 3u | 3 | D1 |
+| 2×1 | 6u | 2 | D4 |
 | 2×2 | 6u | 8 | D4 |
-| 1×4 | 6u | 4 | D4, D5 |
-| 2×4 | 6u | 4 | D5 |
-| 2×4 | 9u | 10 | D2, D3, D6 |
-| 1×4 | 9u | 4 | D2, D3 |
-| 3×4 | 9u | 2 | D6 |
+| 1×3 | 6u | 6 | D4, D5 |
+| 2×3 | 6u | 6 | D5 |
+| 2×3 | 9u | 15 | D2, D3, D6 |
+| 1×3 | 9u | 6 | D2, D3 |
+| 3×3 | 9u | 3 | D6 |
 
-38 bins in total for all six drawers.
+55 bins in total for all six drawers.
 
-**Start with a test print:** one front baseplate and one 2×4 bin at 9u with a label tab. Check that the bin drops in and lifts out easily, that the drawer closes with a bag standing in the bin, and that a 9 mm label fits the tab. Then print the rest of D2, then D1, then the other drawers as needed.
+**Start with a test print:** the front 5×5 baseplate and one 2×3 bin at 9u with a label tab. Check that the baseplate sits flat between the side walls, that the bin drops in and lifts out easily, that the drawer closes with a bag standing in the bin, and that a 9 mm label fits the tab. Then the back baseplate, which shows whether the 2 mm of depth really fit, then the rest of D2, then D1.
 
-**Settings:** a generator such as Gridfinity Rebuilt (OpenSCAD) or the parametric Gridfinity models on MakerWorld; label tabs on, stacking lip on, magnet holes off. Choose a label tab that fits **9 mm tape**, the size currently loaded in the P700. For D1, set the compartment dividers in the generator (2 × 4 for the 2×4 bins, 1 × 4 for the 1×4 bins); scoop-shaped compartment floors make tiny parts easier to pick out.
+**Settings:** a generator such as Gridfinity Rebuilt (OpenSCAD) or the parametric Gridfinity models on MakerWorld; label tabs on, stacking lip on, magnet holes off. Choose a label tab that fits **9 mm tape**, the size currently loaded in the P700. For D1, set the compartment dividers in the generator (2 × 3 for the 2×3 bins, 1 × 3 for the 1×3 bins); scoop-shaped compartment floors make tiny parts easier to pick out.
 
 ## Wall: Multiboard work area
 
@@ -161,7 +167,8 @@ Ready-made shelves: [Multiboard Gridfinity Shelf](https://www.printables.com/mod
 
 ## Open items
 
-- [x] Measure a drawer: 235 × 365 × 85 mm → 5×8 grid, max 9u
+- [x] Measure a drawer: 235 × 380 × 85 mm → 5×9 grid, max 9u
+- [ ] Confirm the 378 mm grid fits the depth (2 mm slack) with the test baseplates
 - [ ] Create the storage location trees in Part-DB (`Helmer › D1…D6 › bins`, `Wall › W-INBOX / W-PROJECT`)
 - [ ] Bin labels: the capture API prints part labels today; storage-location labels are still missing
 - [ ] PWA: "scan bin, then photograph part" flow
