@@ -96,6 +96,7 @@ export interface StockAdded {
   added: number;
   total_amount: number;
   location: string | null;
+  new_lot: boolean; // a location the part wasn't in yet
 }
 
 export async function addStock(id: number, quantity: number, location: string[]): Promise<StockAdded> {
@@ -109,11 +110,19 @@ export async function addStock(id: number, quantity: number, location: string[])
   return response.json();
 }
 
-export async function printLabel(id: number): Promise<void> {
-  await check(await fetch(`/api/parts/${id}/label`, { method: "POST" }));
+/** subtitle overrides the label's second line (default: the part's first storage location). */
+export async function printLabel(id: number, subtitle?: string): Promise<void> {
+  await check(
+    await fetch(`/api/parts/${id}/label`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(subtitle ? { subtitle } : {}),
+    }),
+  );
 }
 
-export const labelPreviewUrl = (id: number) => `/api/parts/${id}/label.png`;
+export const labelPreviewUrl = (id: number, subtitle?: string) =>
+  `/api/parts/${id}/label.png` + (subtitle ? `?subtitle=${encodeURIComponent(subtitle)}` : "");
 
 export interface StorageLocation {
   name: string; // e.g. "D2-A1", unique on its own

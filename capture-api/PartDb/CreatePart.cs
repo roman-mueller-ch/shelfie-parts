@@ -26,4 +26,5 @@ public sealed record CreatedPart(int Id, string Name, string Url, string ScanUrl
 /// <summary>Stock to add to an existing part. Without a location, the part's first stock lot gets it.</summary>
 public sealed record AddStockRequest(double Quantity, IReadOnlyList<string>? StorageLocationPath = null);
 
-public sealed record StockAdded(int Id, string Name, string Url, double Added, double TotalAmount, string? Location);
+/// <summary><paramref name="NewLot"/>: the stock went into a location the part wasn't in yet (its box needs a label).</summary>
+public sealed record StockAdded(int Id, string Name, string Url, double Added, double TotalAmount, string? Location, bool NewLot);

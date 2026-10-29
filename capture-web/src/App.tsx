@@ -26,8 +26,13 @@ interface Done {
   id: number;
   url: string;
   message: string;
-  /** Only new parts get a label; a restocked part already has a labelled box. */
-  label: boolean;
+  /**
+   * New parts and stock in a new bin get a label right away. Restocking an existing bin
+   * only offers one (its box is labelled already, unless the parts move to another bin).
+   */
+  label: "show" | "offer";
+  /** Bin name for the label's second line, e.g. "D2-A1". */
+  bin?: string;
 }
 
 const PATH_SEPARATOR = " › ";
@@ -64,7 +69,7 @@ export default function App() {
           photos={photos}
           onBack={() => setScreen({ kind: "result", result: screen.result })}
           onSaved={(part: CreatedPart) =>
-            setScreen({ kind: "saved", result: screen.result, done: { id: part.id, url: part.url, message: `Saved ${part.name}`, label: true } })}
+            setScreen({ kind: "saved", result: screen.result, done: { id: part.id, url: part.url, message: `Saved ${part.name}`, label: "show" } })}
         />
       )}
       {screen.kind === "restock" && (
@@ -316,7 +321,13 @@ function Restock(props: {
     try {
       const r = await addStock(match.id, Number(quantity), splitPath(location));
       const where = r.location ? ` in ${r.location}` : "";
-      onDone({ id: r.id, url: r.url, message: `Added ${r.added} to ${r.name}${where}, now ${r.total_amount} pcs`, label: false });
+      onDone({
+        id: r.id,
+        url: r.url,
+        message: `Added ${r.added} to ${r.name}${where}, now ${r.total_amount} pcs`,
+        label: r.new_lot ? "show" : "offer",
+        bin: r.location ?? undefined,
+      });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -352,6 +363,13 @@ function Restock(props: {
 
 function Saved(props: { done: Done; hasMoreItems: boolean; onBack: () => void; onRestart: () => void }) {
   const { done, hasMoreItems, onBack, onRestart } = props;
+  const [showLabel, setShowLabel] = useState(done.label === "show");
+  const [bin, setBin] = useState(done.bin ?? "");
+  const [previewBin, setPreviewBin] = useState(bin); // trails typing, so the Pi renders one preview, not one per key
+  useEffect(() => {
+    const t = setTimeout(() => setPreviewBin(bin.trim()), 600);
+    return () => clearTimeout(t);
+  }, [bin]);
   const [printing, setPrinting] = useState<"idle" | "busy" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -359,7 +377,7 @@ function Saved(props: { done: Done; hasMoreItems: boolean; onBack: () => void; o
     setPrinting("busy");
     setError(null);
     try {
-      await printLabel(done.id);
+      await printLabel(done.id, bin.trim() || undefined);
       setPrinting("done");
     } catch (e) {
       setError((e as Error).message);
@@ -370,14 +388,20 @@ function Saved(props: { done: Done; hasMoreItems: boolean; onBack: () => void; o
   return (
     <section>
       <p className="stock yes">✓ {done.message}</p>
-      {done.label && (
+      {done.label === "show" && done.bin && <p className="muted">New bin for this part: label its box.</p>}
+      {showLabel ? (
         <>
-          <img className="label" src={labelPreviewUrl(done.id)} alt="Label preview" />
+          {done.label === "offer" && (
+            <label>Bin on the label<input value={bin} onChange={(e) => setBin(e.target.value)} placeholder="e.g. D2-A1" /></label>
+          )}
+          <img className="label" src={labelPreviewUrl(done.id, previewBin || undefined)} alt="Label preview" />
           <button className="primary" onClick={print} disabled={printing === "busy"}>
             {printing === "busy" ? "Printing…" : printing === "done" ? "Printed ✓ Print again" : "🏷 Print label"}
           </button>
           {error && <p className="error">{error}</p>}
         </>
+      ) : (
+        <button className="link" onClick={() => setShowLabel(true)}>Print a label anyway (e.g. moving to a new bin)</button>
       )}
       <a className="button secondary" href={done.url} target="_blank" rel="noreferrer">Open in Part-DB</a>
       {hasMoreItems && <button className="secondary" onClick={onBack}>Back to the other parts</button>}

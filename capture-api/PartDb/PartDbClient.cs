@@ -146,7 +146,8 @@ public sealed class PartDbClient
             ? lots.FirstOrDefault()
             : lots.FirstOrDefault(x => LocationIri(x) == locationIri);
 
-        if (lot.ValueKind == JsonValueKind.Object)
+        var newLot = lot.ValueKind != JsonValueKind.Object;
+        if (!newLot)
         {
             var unknown = lot.TryGetProperty("instock_unknown", out var u) && u.ValueKind == JsonValueKind.True;
             var current = !unknown && lot.TryGetProperty("amount", out var a) && a.ValueKind == JsonValueKind.Number ? a.GetDouble() : 0;
@@ -169,7 +170,7 @@ public sealed class PartDbClient
             .FirstOrDefault();
         return new StockAdded(id, Str(updated, "name") ?? "", $"{_baseUrl}/en/part/{id}", request.Quantity,
             updated.TryGetProperty("total_instock", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetDouble() : 0,
-            location);
+            location, newLot);
     }
 
     private static string? LocationIri(JsonElement lot) =>
