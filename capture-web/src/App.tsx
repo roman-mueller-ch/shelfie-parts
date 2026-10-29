@@ -26,6 +26,8 @@ interface Done {
   id: number;
   url: string;
   message: string;
+  /** Only new parts get a label; a restocked part already has a labelled box. */
+  label: boolean;
 }
 
 const PATH_SEPARATOR = " › ";
@@ -62,7 +64,7 @@ export default function App() {
           photos={photos}
           onBack={() => setScreen({ kind: "result", result: screen.result })}
           onSaved={(part: CreatedPart) =>
-            setScreen({ kind: "saved", result: screen.result, done: { id: part.id, url: part.url, message: `Saved ${part.name}` } })}
+            setScreen({ kind: "saved", result: screen.result, done: { id: part.id, url: part.url, message: `Saved ${part.name}`, label: true } })}
         />
       )}
       {screen.kind === "restock" && (
@@ -314,7 +316,7 @@ function Restock(props: {
     try {
       const r = await addStock(match.id, Number(quantity), splitPath(location));
       const where = r.location ? ` in ${r.location}` : "";
-      onDone({ id: r.id, url: r.url, message: `Added ${r.added} to ${r.name}${where}, now ${r.total_amount} pcs` });
+      onDone({ id: r.id, url: r.url, message: `Added ${r.added} to ${r.name}${where}, now ${r.total_amount} pcs`, label: false });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -368,11 +370,15 @@ function Saved(props: { done: Done; hasMoreItems: boolean; onBack: () => void; o
   return (
     <section>
       <p className="stock yes">✓ {done.message}</p>
-      <img className="label" src={labelPreviewUrl(done.id)} alt="Label preview" />
-      <button className="primary" onClick={print} disabled={printing === "busy"}>
-        {printing === "busy" ? "Printing…" : printing === "done" ? "Printed ✓ Print again" : "🏷 Print label"}
-      </button>
-      {error && <p className="error">{error}</p>}
+      {done.label && (
+        <>
+          <img className="label" src={labelPreviewUrl(done.id)} alt="Label preview" />
+          <button className="primary" onClick={print} disabled={printing === "busy"}>
+            {printing === "busy" ? "Printing…" : printing === "done" ? "Printed ✓ Print again" : "🏷 Print label"}
+          </button>
+          {error && <p className="error">{error}</p>}
+        </>
+      )}
       <a className="button secondary" href={done.url} target="_blank" rel="noreferrer">Open in Part-DB</a>
       {hasMoreItems && <button className="secondary" onClick={onBack}>Back to the other parts</button>}
       <button className="secondary" onClick={onRestart}>Next part</button>
