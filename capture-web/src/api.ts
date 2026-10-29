@@ -95,7 +95,12 @@ export async function printLabel(id: number): Promise<void> {
 
 export const labelPreviewUrl = (id: number) => `/api/parts/${id}/label.png`;
 
-export async function storageLocations(): Promise<string[]> {
+export interface StorageLocation {
+  name: string; // e.g. "D2-A1", unique on its own
+  path: string; // e.g. "Helmer / D2 / D2-A1"
+}
+
+export async function storageLocations(): Promise<StorageLocation[]> {
   const response = await check(await fetch("/api/storage-locations"));
   return response.json();
 }

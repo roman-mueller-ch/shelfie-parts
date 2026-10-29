@@ -8,6 +8,7 @@ import {
   type CreatedPart,
   type IdentifiedItem,
   type IdentifyResult,
+  type StorageLocation,
 } from "./api";
 import { shrinkPhoto } from "./image";
 
@@ -190,7 +191,7 @@ function Review(props: { item: IdentifiedItem; photos: Blob[]; onBack: () => voi
   const [quantity, setQuantity] = useState(item.quantity_estimate?.toString() ?? "");
   const [location, setLocation] = useState(() => localStorageGet("lastLocation") ?? "");
   const [notes, setNotes] = useState(item.notes ?? "");
-  const [locations, setLocations] = useState<string[]>([]);
+  const [locations, setLocations] = useState<StorageLocation[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -243,9 +244,11 @@ function Review(props: { item: IdentifiedItem; photos: Blob[]; onBack: () => voi
             onChange={(e) => setQuantity(e.target.value)} />
         </label>
         <label>Storage location
-          <input value={location} list="locations" placeholder="e.g. Shelf A / Box 4"
+          <input value={location} list="locations" placeholder="e.g. D2-A1 or W-INBOX"
             onChange={(e) => setLocation(e.target.value)} />
-          <datalist id="locations">{locations.map((l) => <option key={l} value={l} />)}</datalist>
+          <datalist id="locations">
+            {locations.map((l) => <option key={l.path} value={l.name} label={l.path} />)}
+          </datalist>
         </label>
       </div>
       {item.key_parameters.length > 0 && (

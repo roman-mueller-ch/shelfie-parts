@@ -16,6 +16,8 @@ public sealed record StockMatch(
     string Url,
     string MatchedTerm);
 
+public sealed record StorageLocation(string Name, string Path);
+
 /// <summary>Talks to Part-DB's REST API (API Platform) with a personal API token.</summary>
 public sealed class PartDbClient
 {
@@ -124,16 +126,17 @@ public sealed class PartDbClient
         return new CreatedPart(id, request.Name.Trim(), $"{_baseUrl}/en/part/{id}", $"{_baseUrl}/scan/part/{id}", photos.Count);
     }
 
-    /// <summary>Full paths of all storage locations, e.g. "Shelf A / Box 4", for suggestions in the PWA.</summary>
-    public async Task<IReadOnlyList<string>> StorageLocationsAsync(CancellationToken ct)
+    /// <summary>All storage locations as name + full path (e.g. "D2-A1", "Helmer / D2 / D2-A1"), for suggestions in the PWA.</summary>
+    public async Task<IReadOnlyList<StorageLocation>> StorageLocationsAsync(CancellationToken ct)
     {
-        using var doc = await GetAsync("storage_locations?itemsPerPage=1000&order[name]=asc", ct);
+        using var doc = await GetAsync("storage_locations?itemsPerPage=1000", ct);
         return doc.RootElement.EnumerateArray()
-            .Select(e => Str(e, "full_path")?.Replace(" → ", " / "))
-            .OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToList();
+            .Select(e => new StorageLocation(Str(e, "name") ?? "", Str(e, "full_path")?.Replace(" → ", " / ") ?? ""))
+            .Where(l => l.Name != "")
+            .OrderBy(l => l.Path, StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    /// <summary>Label text for a part: MPN (or name) as title, storage location (or name) as subtitle.</summary>
+    /// <summary>Label text for a part: MPN (or name) as title, storage location name (e.g. "D2-A1") or part name as subtitle.</summary>
     public async Task<LabelContent?> GetLabelAsync(int id, LabelRequest overrides, CancellationToken ct)
     {
         using var response = await _http.GetAsync($"parts/{id}", ct);
@@ -146,8 +149,8 @@ public sealed class PartDbClient
         var mpn = NullIfEmpty(Str(part, "manufacturer_product_number"));
         var location = part.TryGetProperty("partLots", out var lots) && lots.ValueKind == JsonValueKind.Array
             ? lots.EnumerateArray()
-                .Select(l => l.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "full_path") : null)
-                .OfType<string>().FirstOrDefault()?.Replace(" → ", " / ")
+                .Select(l => l.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "name") : null)
+                .OfType<string>().FirstOrDefault()
             : null;
 
         return new LabelContent(
@@ -164,6 +167,16 @@ public sealed class PartDbClient
     private async Task<string> ResolvePathAsync(string resource, IReadOnlyList<string> path, CancellationToken ct,
         Dictionary<string, object?>? extraOnCreate = null)
     {
+        // A single name that exists exactly once anywhere in the tree means that element,
+        // so "D2-A1" finds "Helmer → D2 → D2-A1" (bin names are unique on their own).
+        var names = path.Select(p => p.Trim()).Where(p => p.Length > 0).ToList();
+        if (names.Count == 1)
+        {
+            using var doc = await GetAsync($"{resource}?name={Uri.EscapeDataString(EscapeLike(names[0]))}", ct);
+            var matches = doc.RootElement.EnumerateArray().ToList();
+            if (matches.Count == 1) return $"/api/{resource}/{matches[0].GetProperty("id").GetInt32()}";
+        }
+
         string? parent = null;
         foreach (var raw in path)
         {
