@@ -16,3 +16,6 @@ terraform.tfvars
 crash.log
 backups/
 vision/results/
+
+# Built PWA, copied in by the capture-api Dockerfile
+capture-api/wwwroot/

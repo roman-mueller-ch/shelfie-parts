@@ -124,6 +124,15 @@ public sealed class PartDbClient
         return new CreatedPart(id, request.Name.Trim(), $"{_baseUrl}/en/part/{id}", $"{_baseUrl}/scan/part/{id}", photos.Count);
     }
 
+    /// <summary>Full paths of all storage locations, e.g. "Shelf A / Box 4", for suggestions in the PWA.</summary>
+    public async Task<IReadOnlyList<string>> StorageLocationsAsync(CancellationToken ct)
+    {
+        using var doc = await GetAsync("storage_locations?itemsPerPage=1000&order[name]=asc", ct);
+        return doc.RootElement.EnumerateArray()
+            .Select(e => Str(e, "full_path")?.Replace(" → ", " / "))
+            .OfType<string>().Order(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
     /// <summary>Label text for a part: MPN (or name) as title, storage location (or name) as subtitle.</summary>
     public async Task<LabelContent?> GetLabelAsync(int id, LabelRequest overrides, CancellationToken ct)
     {

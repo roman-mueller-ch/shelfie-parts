@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - capture-api/**
+      - capture-web/**
       - vision/prompt.md
       - vision/schema.json
       - .dockerignore

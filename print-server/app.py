@@ -32,7 +32,9 @@ FONT_BOLD = os.environ.get("LABEL_FONT_BOLD", "/usr/share/fonts/truetype/dejavu/
 FONT_REGULAR = os.environ.get("LABEL_FONT", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 MAX_TEXT_PX = int(os.environ.get("LABEL_MAX_TEXT_PX", "640"))  # ~90 mm at 180 dpi
 DPI = 180  # P700 print head
-DEFAULT_TAPE_PX = 128  # 24 mm tape on a P700, used for previews without a printer
+# Previews without a printer use the last tape seen, or this (128 px = 24 mm on a P700).
+DEFAULT_TAPE_PX = int(os.environ.get("LABEL_DEFAULT_TAPE_PX", "128"))
+last_tape_px: int | None = None
 
 app = FastAPI(title="Shelfie print server")
 printer_lock = threading.Lock()  # one job at a time; the printer has no queue
@@ -75,6 +77,8 @@ def printer_info() -> PrinterInfo:
     tape = re.search(r"maximum printing width for this tape is (\d+)\s*px", raw)
     if not tape:
         raise PrinterError(f"Could not read tape width from: {raw}")
+    global last_tape_px
+    last_tape_px = int(tape.group(1))
     width = re.search(r"media width = (\d+) mm", raw)
     color = re.search(r"tape color = \S+ \(([^)]*)\)", raw)
     return PrinterInfo(
@@ -185,7 +189,7 @@ def preview(label: Label, tape_px: int | None = Query(None, ge=16, le=128)):
         try:
             tape_px = printer_info().tape_px
         except PrinterError:
-            tape_px = DEFAULT_TAPE_PX
+            tape_px = last_tape_px or DEFAULT_TAPE_PX
     return Response(to_ptouch_png(render(label, tape_px)), media_type="image/png")
 
 

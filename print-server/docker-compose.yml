@@ -40,6 +40,9 @@ services:
     depends_on:
       ts-labels:
         condition: service_healthy
+    environment:
+      # Tape width for previews until the printer has been seen (52 px = 9 mm tape).
+      - LABEL_DEFAULT_TAPE_PX=52
     volumes:
       # The whole USB bus, so the printer is found again after unplugging or
       # switching it off and on (its device node changes each time).

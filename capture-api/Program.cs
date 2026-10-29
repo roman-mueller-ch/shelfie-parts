@@ -24,6 +24,9 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 app.UseExceptionHandler();
+// The PWA (capture-web/, built into wwwroot/ by the Dockerfile).
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
@@ -131,6 +134,12 @@ app.MapGet("/api/parts/{id:int}/label.png", async (int id, string? title, string
         return Results.Problem($"Preview failed: {e.Message}", statusCode: 502);
     }
 });
+
+app.MapGet("/api/storage-locations", (PartDbClient partDb, CancellationToken ct) => partDb.StorageLocationsAsync(ct));
+
+// Unknown /api paths are 404s; everything else is the PWA.
+app.MapFallback("/api/{**path}", () => Results.Problem("Not found.", statusCode: 404));
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
