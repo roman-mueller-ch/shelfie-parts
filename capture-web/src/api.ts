@@ -89,6 +89,26 @@ export async function createPart(part: CreatePartRequest, photos: Blob[]): Promi
   return response.json();
 }
 
+export interface StockAdded {
+  id: number;
+  name: string;
+  url: string;
+  added: number;
+  total_amount: number;
+  location: string | null;
+}
+
+export async function addStock(id: number, quantity: number, location: string[]): Promise<StockAdded> {
+  const response = await check(
+    await fetch(`/api/parts/${id}/stock`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantity, storage_location_path: location }),
+    }),
+  );
+  return response.json();
+}
+
 export async function printLabel(id: number): Promise<void> {
   await check(await fetch(`/api/parts/${id}/label`, { method: "POST" }));
 }

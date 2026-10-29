@@ -126,6 +126,56 @@ public sealed class PartDbClient
         return new CreatedPart(id, request.Name.Trim(), $"{_baseUrl}/en/part/{id}", $"{_baseUrl}/scan/part/{id}", photos.Count);
     }
 
+    /// <summary>
+    /// Adds stock to an existing part: to the lot in the given location (a new lot if the part has
+    /// none there), or without a location to the part's first lot. A lot with unknown stock becomes known.
+    /// </summary>
+    public async Task<StockAdded?> AddStockAsync(int id, AddStockRequest request, CancellationToken ct)
+    {
+        if (request.Quantity <= 0) throw new PartDbException("Quantity must be positive.");
+        using var response = await _http.GetAsync($"parts/{id}", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        if (!response.IsSuccessStatusCode) throw new PartDbException($"Part-DB {(int)response.StatusCode} for GET parts/{id}");
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+        var part = doc.RootElement;
+        var lots = part.TryGetProperty("partLots", out var l) && l.ValueKind == JsonValueKind.Array ? l.EnumerateArray().ToList() : [];
+
+        string? locationIri = request.StorageLocationPath is { Count: > 0 }
+            ? await ResolvePathAsync("storage_locations", request.StorageLocationPath, ct) : null;
+        var lot = locationIri is null
+            ? lots.FirstOrDefault()
+            : lots.FirstOrDefault(x => LocationIri(x) == locationIri);
+
+        if (lot.ValueKind == JsonValueKind.Object)
+        {
+            var unknown = lot.TryGetProperty("instock_unknown", out var u) && u.ValueKind == JsonValueKind.True;
+            var current = !unknown && lot.TryGetProperty("amount", out var a) && a.ValueKind == JsonValueKind.Number ? a.GetDouble() : 0;
+            (await PatchAsync($"part_lots/{lot.GetProperty("id").GetInt32()}",
+                new { amount = current + request.Quantity, instock_unknown = false }, ct)).Dispose();
+        }
+        else
+        {
+            var body = new Dictionary<string, object?> { ["part"] = $"/api/parts/{id}", ["amount"] = request.Quantity };
+            if (locationIri is not null) body["storage_location"] = locationIri;
+            (await PostAsync("part_lots", body, ct)).Dispose();
+        }
+
+        // Read back for the new total and the location name.
+        using var after = await GetAsync($"parts/{id}", ct);
+        var updated = after.RootElement;
+        var location = updated.GetProperty("partLots").EnumerateArray()
+            .Where(x => locationIri is null || LocationIri(x) == locationIri)
+            .Select(x => x.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "name") : null)
+            .FirstOrDefault();
+        return new StockAdded(id, Str(updated, "name") ?? "", $"{_baseUrl}/en/part/{id}", request.Quantity,
+            updated.TryGetProperty("total_instock", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetDouble() : 0,
+            location);
+    }
+
+    private static string? LocationIri(JsonElement lot) =>
+        lot.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object
+            ? $"/api/storage_locations/{s.GetProperty("id").GetInt32()}" : null;
+
     /// <summary>All storage locations as name + full path (e.g. "D2-A1", "Helmer / D2 / D2-A1"), for suggestions in the PWA.</summary>
     public async Task<IReadOnlyList<StorageLocation>> StorageLocationsAsync(CancellationToken ct)
     {
@@ -237,6 +287,18 @@ public sealed class PartDbClient
         return await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
+    private async Task<JsonDocument> PatchAsync(string path, object body, CancellationToken ct)
+    {
+        using var content = new StringContent(JsonSerializer.Serialize(body), System.Text.Encoding.UTF8, "application/merge-patch+json");
+        using var response = await _http.PatchAsync(path, content, ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            var detail = await response.Content.ReadAsStringAsync(ct);
+            throw new PartDbException($"Part-DB {(int)response.StatusCode} for PATCH {path}: {detail[..Math.Min(detail.Length, 500)]}");
+        }
+        return await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+    }
+
     private async Task<JsonDocument> GetAsync(string path, CancellationToken ct)
     {
         using var response = await _http.GetAsync(path, ct);
@@ -256,7 +318,7 @@ public sealed class PartDbClient
             NullIfEmpty(Str(part, "manufacturer_product_number")),
             part.TryGetProperty("category", out var c) && c.ValueKind == JsonValueKind.Object ? Str(c, "full_path") : null,
             part.TryGetProperty("total_instock", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetDouble() : 0,
-            lots.Select(lot => lot.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "full_path") : null)
+            lots.Select(lot => lot.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "name") : null)
                 .OfType<string>().Distinct().ToList(),
             $"{_baseUrl}/en/part/{id}",
             term);

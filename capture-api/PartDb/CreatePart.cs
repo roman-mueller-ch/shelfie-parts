@@ -22,3 +22,8 @@ public sealed record CreatePartRequest(
     IReadOnlyList<string>? StorageLocationPath = null);
 
 public sealed record CreatedPart(int Id, string Name, string Url, string ScanUrl, int Photos);
+
+/// <summary>Stock to add to an existing part. Without a location, the part's first stock lot gets it.</summary>
+public sealed record AddStockRequest(double Quantity, IReadOnlyList<string>? StorageLocationPath = null);
+
+public sealed record StockAdded(int Id, string Name, string Url, double Added, double TotalAmount, string? Location);

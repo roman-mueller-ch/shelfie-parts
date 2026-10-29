@@ -152,8 +152,10 @@ For local development (`dotnet run` in `capture-api/`), the secrets go into `dot
 |---|---|
 | `POST /api/identify` | multipart `images` (1–4) + optional `hint` → identification + matching parts in stock |
 | `POST /api/parts` | multipart `part` (JSON) + optional `photos` → creates the part with stock lot, parameters, photos |
+| `POST /api/parts/{id}/stock` | JSON `{quantity, storage_location_path?}` → adds stock to an existing part (its lot in that location, or a new lot) |
 | `POST /api/parts/{id}/label` | prints the QR label; optional JSON `{title, subtitle, copies}` |
 | `GET /api/parts/{id}/label.png` | label preview |
+| `GET /api/storage-locations` | all storage locations (name + full path) |
 
 ## Moving away from Azure
 

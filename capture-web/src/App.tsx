@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  addStock,
   createPart,
   identify,
   labelPreviewUrl,
@@ -8,6 +9,7 @@ import {
   type CreatedPart,
   type IdentifiedItem,
   type IdentifyResult,
+  type StockMatch,
   type StorageLocation,
 } from "./api";
 import { shrinkPhoto } from "./image";
@@ -16,7 +18,15 @@ type Screen =
   | { kind: "capture" }
   | { kind: "result"; result: IdentifyResult }
   | { kind: "review"; result: IdentifyResult; index: number }
-  | { kind: "saved"; result: IdentifyResult; part: CreatedPart };
+  | { kind: "restock"; result: IdentifyResult; index: number; match: StockMatch }
+  | { kind: "saved"; result: IdentifyResult; done: Done };
+
+/** What the last screen shows: a new part or restocked one. */
+interface Done {
+  id: number;
+  url: string;
+  message: string;
+}
 
 const PATH_SEPARATOR = " › ";
 const splitPath = (s: string) => s.split(/\s*[›>/→]\s*/).map((p) => p.trim()).filter(Boolean);
@@ -42,6 +52,7 @@ export default function App() {
         <Result
           result={screen.result}
           onAdd={(index) => setScreen({ kind: "review", result: screen.result, index })}
+          onRestock={(index, match) => setScreen({ kind: "restock", result: screen.result, index, match })}
           onRestart={restart}
         />
       )}
@@ -50,12 +61,21 @@ export default function App() {
           item={screen.result.items[screen.index].item}
           photos={photos}
           onBack={() => setScreen({ kind: "result", result: screen.result })}
-          onSaved={(part) => setScreen({ kind: "saved", result: screen.result, part })}
+          onSaved={(part: CreatedPart) =>
+            setScreen({ kind: "saved", result: screen.result, done: { id: part.id, url: part.url, message: `Saved ${part.name}` } })}
+        />
+      )}
+      {screen.kind === "restock" && (
+        <Restock
+          match={screen.match}
+          suggested={screen.result.items[screen.index].item.quantity_estimate}
+          onBack={() => setScreen({ kind: "result", result: screen.result })}
+          onDone={(done) => setScreen({ kind: "saved", result: screen.result, done })}
         />
       )}
       {screen.kind === "saved" && (
         <Saved
-          part={screen.part}
+          done={screen.done}
           hasMoreItems={screen.result.items.length > 1}
           onBack={() => setScreen({ kind: "result", result: screen.result })}
           onRestart={restart}
@@ -140,8 +160,13 @@ function Thumb({ blob, onRemove }: { blob: Blob; onRemove: () => void }) {
 
 // ------------------------------------------------------------------ 2. result
 
-function Result(props: { result: IdentifyResult; onAdd: (index: number) => void; onRestart: () => void }) {
-  const { result, onAdd, onRestart } = props;
+function Result(props: {
+  result: IdentifyResult;
+  onAdd: (index: number) => void;
+  onRestock: (index: number, match: StockMatch) => void;
+  onRestart: () => void;
+}) {
+  const { result, onAdd, onRestock, onRestart } = props;
   return (
     <section>
       {result.items.length === 0 && <p>No parts recognised.</p>}
@@ -155,22 +180,25 @@ function Result(props: { result: IdentifyResult; onAdd: (index: number) => void;
           {in_stock.length > 0 ? (
             <div className="stock yes">
               <strong>Already in stock</strong>
-              <ul>
-                {in_stock.map((m) => (
-                  <li key={m.id}>
+              {in_stock.map((m) => (
+                <div key={m.id} className="match">
+                  <span>
                     <a href={m.url} target="_blank" rel="noreferrer">{m.name}</a>: {m.total_amount} pcs
                     {m.locations.length > 0 && <> in {m.locations.join(", ")}</>}
-                  </li>
-                ))}
-              </ul>
+                  </span>
+                  <button className="primary small" onClick={() => onRestock(i, m)}>+ Add to stock</button>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="stock no">Not in stock yet</div>
           )}
           {item.notes && <p className="note">{item.notes}</p>}
-          <button className={in_stock.length ? "secondary" : "primary"} onClick={() => onAdd(i)}>
-            {in_stock.length ? "Add as new part anyway" : "Add to inventory"}
-          </button>
+          {in_stock.length ? (
+            <button className="link" onClick={() => onAdd(i)}>It's a different part: add as new</button>
+          ) : (
+            <button className="primary" onClick={() => onAdd(i)}>Add to inventory</button>
+          )}
         </article>
       ))}
       {result.needs_better_photo && result.photo_advice && <p className="note">📷 {result.photo_advice}</p>}
@@ -266,10 +294,62 @@ function Review(props: { item: IdentifiedItem; photos: Blob[]; onBack: () => voi
   );
 }
 
+// ------------------------------------------------------------------ 3b. restock
+
+function Restock(props: {
+  match: StockMatch;
+  suggested: number | null;
+  onBack: () => void;
+  onDone: (done: Done) => void;
+}) {
+  const { match, suggested, onBack, onDone } = props;
+  const [quantity, setQuantity] = useState(suggested?.toString() ?? "1");
+  const [location, setLocation] = useState(match.locations[0] ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await addStock(match.id, Number(quantity), splitPath(location));
+      const where = r.location ? ` in ${r.location}` : "";
+      onDone({ id: r.id, url: r.url, message: `Added ${r.added} to ${r.name}${where}, now ${r.total_amount} pcs` });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const valid = Number(quantity) > 0;
+  return (
+    <section>
+      <h2>{match.name}</h2>
+      <p className="muted">
+        Now {match.total_amount} pcs{match.locations.length > 0 && <> in {match.locations.join(", ")}</>}
+      </p>
+      <div className="row">
+        <label>Add pieces
+          <input type="number" inputMode="numeric" min={1} value={quantity} autoFocus
+            onChange={(e) => setQuantity(e.target.value)} />
+        </label>
+        <label>Storage location
+          <input value={location} placeholder="e.g. D2-A1" onChange={(e) => setLocation(e.target.value)} />
+        </label>
+      </div>
+      <p className="muted">A different location gets its own stock entry for this part.</p>
+      <button className="primary" onClick={save} disabled={busy || !valid}>{busy ? "Saving…" : "Add to stock"}</button>
+      <button className="secondary" onClick={onBack} disabled={busy}>Back</button>
+      {error && <p className="error">{error}</p>}
+    </section>
+  );
+}
+
 // ------------------------------------------------------------------ 4. saved
 
-function Saved(props: { part: CreatedPart; hasMoreItems: boolean; onBack: () => void; onRestart: () => void }) {
-  const { part, hasMoreItems, onBack, onRestart } = props;
+function Saved(props: { done: Done; hasMoreItems: boolean; onBack: () => void; onRestart: () => void }) {
+  const { done, hasMoreItems, onBack, onRestart } = props;
   const [printing, setPrinting] = useState<"idle" | "busy" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -277,7 +357,7 @@ function Saved(props: { part: CreatedPart; hasMoreItems: boolean; onBack: () => 
     setPrinting("busy");
     setError(null);
     try {
-      await printLabel(part.id);
+      await printLabel(done.id);
       setPrinting("done");
     } catch (e) {
       setError((e as Error).message);
@@ -287,13 +367,13 @@ function Saved(props: { part: CreatedPart; hasMoreItems: boolean; onBack: () => 
 
   return (
     <section>
-      <p className="stock yes">✓ Saved <strong>{part.name}</strong></p>
-      <img className="label" src={labelPreviewUrl(part.id)} alt="Label preview" />
+      <p className="stock yes">✓ {done.message}</p>
+      <img className="label" src={labelPreviewUrl(done.id)} alt="Label preview" />
       <button className="primary" onClick={print} disabled={printing === "busy"}>
         {printing === "busy" ? "Printing…" : printing === "done" ? "Printed ✓ Print again" : "🏷 Print label"}
       </button>
       {error && <p className="error">{error}</p>}
-      <a className="button secondary" href={part.url} target="_blank" rel="noreferrer">Open in Part-DB</a>
+      <a className="button secondary" href={done.url} target="_blank" rel="noreferrer">Open in Part-DB</a>
       {hasMoreItems && <button className="secondary" onClick={onBack}>Back to the other parts</button>}
       <button className="secondary" onClick={onRestart}>Next part</button>
     </section>

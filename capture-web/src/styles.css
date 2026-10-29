@@ -80,7 +80,13 @@ h2 { font-size: 1.1rem; margin: 0 0 4px; }
 .stock { border-radius: 8px; padding: 8px 10px; }
 .stock.yes { background: var(--ok-bg); color: var(--ok-text); }
 .stock.no { background: var(--info-bg); color: var(--muted); }
-.stock ul { margin: 4px 0 0; padding-left: 18px; }
+.match {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
 .stock a { color: inherit; }
 
 label {
@@ -146,4 +152,14 @@ img.label {
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 6px;
+}
+
+button.small { flex: none; padding: 8px 12px; font-size: 0.9rem; }
+button.link {
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  font-weight: 400;
+  padding: 4px;
 }

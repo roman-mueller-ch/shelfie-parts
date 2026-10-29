@@ -102,6 +102,21 @@ app.MapPost("/api/parts", async (HttpRequest http, PartDbClient partDb, JsonSeri
     }
 }).DisableAntiforgery();
 
+// Restock an existing part. JSON: {"quantity": 5, "storage_location_path": ["D2-A1"]} (location optional).
+app.MapPost("/api/parts/{id:int}/stock", async (int id, AddStockRequest request, PartDbClient partDb, CancellationToken ct) =>
+{
+    if (request.Quantity <= 0) return Results.Problem("Quantity must be positive.", statusCode: 400);
+    try
+    {
+        var added = await partDb.AddStockAsync(id, request, ct);
+        return added is null ? Results.Problem($"Part {id} not found.", statusCode: 404) : Results.Ok(added);
+    }
+    catch (PartDbException e)
+    {
+        return Results.Problem(e.Message, statusCode: 502);
+    }
+});
+
 // Print the part's QR label on the P-touch. Body optional: {"title", "subtitle", "copies"}.
 app.MapPost("/api/parts/{id:int}/label", async (int id, LabelRequest? overrides,
     PartDbClient partDb, LabelPrinter printer, CancellationToken ct) =>
