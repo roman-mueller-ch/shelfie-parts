@@ -1,0 +1,120 @@
+{
+  "_comment": "Source of truth for the physical storage layout. docs/storage.md explains it; storage/generate.py validates it and renders the STL files. Bin sizes are [across, deep] in Gridfinity units, heights in u (7 mm). A bin's 'at' is its front-left cell: column A-E (left to right), row 1-9 (front to back).",
+
+  "drawer": {
+    "inner_mm": { "width": 235, "depth": 380, "height": 85 },
+    "grid": { "columns": 5, "rows": 9 },
+    "fit_clearance_mm": 1.0,
+    "baseplates": [
+      { "name": "front", "rows": 5, "round_corners": "front" },
+      { "name": "back", "rows": 4, "round_corners": "back" }
+    ]
+  },
+
+  "defaults": { "lite": true, "labels": true, "scoops": false },
+
+  "drawers": [
+    {
+      "id": "D1",
+      "contents": "Small loose parts: ICs, crystals, LEDs, buttons",
+      "colour": "white",
+      "bins": [
+        { "at": "A1", "size": [2, 3], "height": 3, "compartments": [2, 3], "lite": false, "scoops": true },
+        { "at": "C1", "size": [2, 3], "height": 3, "compartments": [2, 3], "lite": false, "scoops": true },
+        { "at": "E1", "size": [1, 3], "height": 3, "compartments": [1, 3], "lite": false, "scoops": true },
+        { "at": "A4", "size": [2, 3], "height": 3, "compartments": [2, 3], "lite": false, "scoops": true },
+        { "at": "C4", "size": [2, 3], "height": 3, "compartments": [2, 3], "lite": false, "scoops": true },
+        { "at": "E4", "size": [1, 3], "height": 3, "compartments": [1, 3], "lite": false, "scoops": true },
+        { "at": "A7", "size": [2, 3], "height": 3, "compartments": [2, 3], "lite": false, "scoops": true },
+        { "at": "C7", "size": [2, 3], "height": 3, "compartments": [2, 3], "lite": false, "scoops": true },
+        { "at": "E7", "size": [1, 3], "height": 3, "compartments": [1, 3], "lite": false, "scoops": true }
+      ]
+    },
+    {
+      "id": "D2",
+      "contents": "Bagged parts",
+      "colour": "blue",
+      "bins": [
+        { "at": "A1", "size": [2, 3], "height": 9 },
+        { "at": "C1", "size": [2, 3], "height": 9 },
+        { "at": "E1", "size": [1, 3], "height": 9 },
+        { "at": "A4", "size": [2, 3], "height": 9 },
+        { "at": "C4", "size": [2, 3], "height": 9 },
+        { "at": "E4", "size": [1, 3], "height": 9 },
+        { "at": "A7", "size": [2, 3], "height": 9 },
+        { "at": "C7", "size": [2, 3], "height": 9 },
+        { "at": "E7", "size": [1, 3], "height": 9 }
+      ]
+    },
+    {
+      "id": "D3",
+      "contents": "Bagged parts",
+      "colour": "blue",
+      "bins": [
+        { "at": "A1", "size": [2, 3], "height": 9 },
+        { "at": "C1", "size": [2, 3], "height": 9 },
+        { "at": "E1", "size": [1, 3], "height": 9 },
+        { "at": "A4", "size": [2, 3], "height": 9 },
+        { "at": "C4", "size": [2, 3], "height": 9 },
+        { "at": "E4", "size": [1, 3], "height": 9 },
+        { "at": "A7", "size": [2, 3], "height": 9 },
+        { "at": "C7", "size": [2, 3], "height": 9 },
+        { "at": "E7", "size": [1, 3], "height": 9 }
+      ]
+    },
+    {
+      "id": "D4",
+      "contents": "Modules and sensors",
+      "colour": "green",
+      "bins": [
+        { "at": "A1", "size": [2, 2], "height": 6 },
+        { "at": "C1", "size": [2, 2], "height": 6 },
+        { "at": "A3", "size": [2, 2], "height": 6 },
+        { "at": "C3", "size": [2, 2], "height": 6 },
+        { "at": "A5", "size": [2, 2], "height": 6 },
+        { "at": "C5", "size": [2, 2], "height": 6 },
+        { "at": "A7", "size": [2, 2], "height": 6 },
+        { "at": "C7", "size": [2, 2], "height": 6 },
+        { "at": "A9", "size": [2, 1], "height": 6 },
+        { "at": "C9", "size": [2, 1], "height": 6 },
+        { "at": "E1", "size": [1, 3], "height": 6 },
+        { "at": "E4", "size": [1, 3], "height": 6 },
+        { "at": "E7", "size": [1, 3], "height": 6 }
+      ]
+    },
+    {
+      "id": "D5",
+      "contents": "Dev boards and displays",
+      "colour": "green",
+      "bins": [
+        { "at": "A1", "size": [2, 3], "height": 6 },
+        { "at": "C1", "size": [2, 3], "height": 6 },
+        { "at": "E1", "size": [1, 3], "height": 6 },
+        { "at": "A4", "size": [2, 3], "height": 6 },
+        { "at": "C4", "size": [2, 3], "height": 6 },
+        { "at": "E4", "size": [1, 3], "height": 6 },
+        { "at": "A7", "size": [2, 3], "height": 6 },
+        { "at": "C7", "size": [2, 3], "height": 6 },
+        { "at": "E7", "size": [1, 3], "height": 6 }
+      ]
+    },
+    {
+      "id": "D6",
+      "contents": "Cables, wire, tools",
+      "colour": "grey",
+      "bins": [
+        { "at": "A1", "size": [3, 3], "height": 9 },
+        { "at": "A4", "size": [3, 3], "height": 9 },
+        { "at": "A7", "size": [3, 3], "height": 9 },
+        { "at": "D1", "size": [2, 3], "height": 9 },
+        { "at": "D4", "size": [2, 3], "height": 9 },
+        { "at": "D7", "size": [2, 3], "height": 9 }
+      ]
+    }
+  ],
+
+  "wall": [
+    { "id": "W-INBOX", "contents": "New parcels, waiting to be captured", "colour": "yellow", "size": [4, 2], "height": 10 },
+    { "id": "W-PROJECT", "contents": "Parts for the current project", "colour": "green", "size": [2, 2], "height": 6, "count": 2 }
+  ]
+}

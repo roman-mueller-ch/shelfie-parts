@@ -69,6 +69,7 @@ shelfie-parts/
 ├── capture-web/    # React + Vite PWA
 ├── print-server/   # FastAPI print service for the Pi (own compose stack + Tailscale sidecar)
 ├── vision/         # vision prompt, JSON schema, identify.py test CLI
+├── storage/        # plan.json (bins and drawers) + generate.py (Gridfinity STLs)
 ├── scripts/        # backup.sh
 └── docs/           # getting-started.md, storage.md (Gridfinity bins in an IKEA Helmer)
 ```

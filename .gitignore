@@ -19,3 +19,6 @@ vision/results/
 
 # Built PWA, copied in by the capture-api Dockerfile
 capture-api/wwwroot/
+
+# Generated Gridfinity STL/STEP files
+storage/out/

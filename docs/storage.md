@@ -7,7 +7,7 @@ Physical layout of the inventory. Every bin is a storage location in Part-DB, wi
 - **IKEA Helmer**, 6 drawers, numbered **D1 (top) to D6 (bottom)**.
 - **Inside of a drawer: 235 × 380 × 85 mm** (width × depth × height), measured 2026-10-29.
 - **Grid per drawer: 5 × 9 units** (210 × 378 mm), 5 across the front, 9 deep.
-- **Margin:** 25 mm in width, filled with padding on the baseplates (12.5 mm left and right). In depth only **2 mm** are left, so the grid fills the drawer front to back.
+- **Margin:** 25 mm in width, filled with padding on the baseplates (12 mm left and right, leaving 1 mm so they slide in). In depth only **2 mm** are left, so the grid fills the drawer front to back.
 
 > **2 mm is tight.** Before printing the second baseplate, measure the depth again at the floor along both side walls, and check the corners: if the drawer's corners are rounded or have a seam, the baseplate's corner needs to clear it. If 378 mm doesn't fit, fall back to 8 rows and 44 mm of padding at the back.
 
@@ -85,14 +85,24 @@ row 1–3 │   A1 (3×3)    │  D1 (2×3)  │
 
 ## Print list
 
+All STL files come from **`storage/generate.py`**, which reads **`storage/plan.json`**: the drawer size, grid and every bin. Change the plan there, not here, then regenerate:
+
+```bash
+python3 storage/generate.py --check     # validate, show layouts and print list (no CAD needed)
+uv run storage/generate.py              # render everything to storage/out/ (first run installs CadQuery)
+uv run storage/generate.py --only base  # just the baseplates, e.g. for the test print
+```
+
+`storage/out/print-list.md` lists every file with quantity, colour and which bins it's for. The validator refuses plans where bins overlap, run outside the grid or are too tall for the drawer, and warns about empty cells, 1×1 bins and tight headroom.
+
 ### Baseplates
 
-Per drawer one **5×5** and one **5×4** baseplate, both with **12.5 mm padding left and right** (most generators can add padding; no separate spacers needed):
+Per drawer one **5×5** and one **5×4** baseplate, both with **12 mm padding left and right**: the 25 mm margin minus 1 mm clearance so they slide in. Only the corners that sit in a drawer corner are rounded; the edges where the two pieces meet stay square. No separate spacers needed.
 
 | Piece | Grid | Outer size |
 |---|---|---|
-| Front | 5×5 | 235 × 210 mm |
-| Back | 5×4 | 235 × 168 mm |
+| Front | 5×5 | 234 × 210 mm |
+| Back | 5×4 | 234 × 168 mm |
 
 Both fit the A1's 256 × 256 mm bed. Magnets aren't needed; bins in a drawer don't slide. For all six drawers: 6 front and 6 back pieces.
 
@@ -114,7 +124,9 @@ Both fit the A1's 256 × 256 mm bed. Magnets aren't needed; bins in a drawer don
 
 **Start with a test print:** the front 5×5 baseplate and one 2×3 bin at 9u with a label tab. Check that the baseplate sits flat between the side walls, that the bin drops in and lifts out easily, that the drawer closes with a bag standing in the bin, and that a 9 mm label fits the tab. Then the back baseplate, which shows whether the 2 mm of depth really fit, then the rest of D2, then D1.
 
-**Settings:** a generator such as Gridfinity Rebuilt (OpenSCAD) or the parametric Gridfinity models on MakerWorld; label tabs on, stacking lip on, magnet holes off. Choose a label tab that fits **9 mm tape**, the size currently loaded in the P700. For D1, set the compartment dividers in the generator (2 × 3 for the 2×3 bins, 1 × 3 for the 1×3 bins); scoop-shaped compartment floors make tiny parts easier to pick out.
+**What the generator makes:** bins with a stacking lip and a label shelf (12 mm wide, fits the 9 mm tape), no magnet holes. Bins are "lite" style (thin shell, no raised floor) to save filament, except D1, which has a solid floor with compartments and scoop-shaped floors so tiny parts are easy to pick out. Per-bin options (`lite`, `labels`, `scoops`, `compartments`) live in `plan.json`.
+
+**Slicer (Bambu Studio):** PLA, 0.2 mm layers, 2–3 walls, 10–15 % infill, no supports. STL units are millimetres.
 
 ## Wall: Multiboard work area
 
@@ -169,6 +181,7 @@ Ready-made shelves: [Multiboard Gridfinity Shelf](https://www.printables.com/mod
 
 - [x] Measure a drawer: 235 × 380 × 85 mm → 5×9 grid, max 9u
 - [ ] Confirm the 378 mm grid fits the depth (2 mm slack) with the test baseplates
+- [ ] First real run of `storage/generate.py` on the Mac (written and validated without CadQuery; rendering untested)
 - [ ] Create the storage location trees in Part-DB (`Helmer › D1…D6 › bins`, `Wall › W-INBOX / W-PROJECT`)
 - [ ] Bin labels: the capture API prints part labels today; storage-location labels are still missing
 - [ ] PWA: "scan bin, then photograph part" flow
