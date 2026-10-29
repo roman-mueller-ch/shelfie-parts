@@ -1,0 +1,22 @@
+{
+    "type": "process",
+    "from": "User",
+    "inherits": "0.28mm Extra Draft @BBL A1",
+    "name": "0.28mm Shelfie Gridfinity @BBL A1",
+    "print_settings_id": "0.28mm Shelfie Gridfinity @BBL A1",
+    "is_custom_defined": "0",
+    "version": "2.8.0.9",
+    "wall_loops": "2",
+    "wall_generator": "arachne",
+    "top_shell_layers": "3",
+    "top_shell_thickness": "0",
+    "bottom_shell_layers": "3",
+    "bottom_shell_thickness": "0",
+    "sparse_infill_pattern": "lightning",
+    "sparse_infill_density": "10%",
+    "infill_combination": "1",
+    "enable_support": "0",
+    "compatible_printers": [
+        "Bambu Lab A1 0.4 nozzle"
+    ]
+}

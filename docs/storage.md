@@ -126,7 +126,23 @@ Both fit the A1's 256 × 256 mm bed. Magnets aren't needed; bins in a drawer don
 
 **What the generator makes:** bins with a stacking lip and a label shelf (12 mm wide, fits the 9 mm tape), no magnet holes. Bins are "lite" style (thin shell, no raised floor) to save filament, except D1, which has a solid floor with compartments and scoop-shaped floors so tiny parts are easy to pick out. Per-bin options (`lite`, `labels`, `scoops`, `compartments`) live in `plan.json`.
 
-**Slicer (Bambu Studio):** PLA, 0.2 mm layers, 2–3 walls, 10–15 % infill, no supports. STL units are millimetres.
+**Slicer (Bambu Studio):** import the process preset **`storage/bambu/shelfie-gridfinity-a1.json`** with *File → Import → Import Configs*. It appears as **"0.28mm Shelfie Gridfinity @BBL A1"** under the A1's process presets. Use it with Bambu's own PLA filament preset.
+
+It is the official *0.28mm Extra Draft @BBL A1* profile (Bambu's speeds and accelerations for the A1) with these changes for bins and baseplates:
+
+| Setting | Value | Why |
+|---|---|---|
+| Layer height | 0.28 mm (from the base profile) | fewest layers; Gridfinity fits don't need fine layers |
+| Wall loops | 2 | the 1 mm bin walls are exactly two lines |
+| Wall generator | Arachne | fills thin walls cleanly instead of gap-fill zig-zags |
+| Top / bottom shell layers | 3 / 3 (no minimum thickness) | floors and label shelves don't need more |
+| Sparse infill | Lightning, 10 % | only holds up top surfaces; least material and time |
+| Infill combination | on | prints sparse infill every other layer |
+| Supports | off | nothing in bins or baseplates needs them |
+
+Speeds are left as Bambu set them: at 0.28 mm the A1 is limited by how fast the hotend can melt PLA, not by the motion settings. If importing fails, set the values in the table by hand on top of *0.28mm Extra Draft @BBL A1* and save it as a user preset.
+
+Fill each plate: two 2×3 bins plus a 1×3 fit side by side on the 256 mm bed, which saves the per-plate heat-up and calibration time.
 
 ## Wall: Multiboard work area
 
