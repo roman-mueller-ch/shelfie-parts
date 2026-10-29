@@ -16,6 +16,7 @@ It exists to solve one very specific problem:
 - **"Do I already have it?"**: before ordering, share a screenshot or link and Shelfie searches your inventory: *"3 in Box 4."*
 - **Proper electronics inventory**: built on [Part-DB](https://github.com/Part-DB/Part-DB-server), with categories, footprints, storage locations, stock lots, datasheets and parameters.
 - **Labels on demand**: prints QR-code labels on a Brother P-touch P700 via a Raspberry Pi print server.
+- **A physical home for every part**: Gridfinity bins in an IKEA Helmer drawer unit, each bin a storage location in Part-DB, with 3D-print files generated from one plan file.
 - **Private by default**: everything is reachable only over Tailscale; nothing is exposed to the public internet.
 - **Portable**: one `docker compose` stack plus two data folders. Moving hosts takes an evening, not a weekend.
 
@@ -45,6 +46,36 @@ It exists to solve one very specific problem:
 4. Otherwise you review the suggested fields, confirm, and the part, stock lot and photo are created in Part-DB.
 5. `capture-api` asks the Pi print server to print a QR label linking to the part.
 
+## Physical storage
+
+Parts live in **Gridfinity bins in an IKEA Helmer** (6 drawers), plus a small **Multiboard wall area** next to the desk.
+
+- **Drawers:** inside 235 × 380 × 85 mm → a **5 × 9 Gridfinity grid** per drawer, bins up to **9u** tall. Each drawer gets a 5×5 and a 5×4 baseplate with built-in side padding, so no separate spacers are needed.
+- **What goes where:** D1 small loose parts (bins with compartments), D2–D3 bagged AliExpress parts standing upright, D4 modules, D5 dev boards, D6 cables and tools. 55 bins in total, no 1×1 bins.
+- **Wall:** `W-INBOX` for new parcels waiting to be captured, `W-PROJECT` for parts in use.
+- **Naming:** a bin is named after its front-left cell (`D2-A1`) and is a storage location in Part-DB (`Helmer › D2 › D2-A1`). Names describe positions, so labels stay valid when contents change.
+
+### Print files
+
+The layout lives in one file, **`storage/plan.json`**. **`storage/generate.py`** validates it and renders the STL files with [cqgridfinity](https://github.com/michaelgale/cq-gridfinity):
+
+```bash
+python3 storage/generate.py --check       # validate, show drawer layouts and print list (no CAD needed)
+uv run storage/generate.py                # render all baseplates and bins to storage/out/
+uv run storage/generate.py --only baseplate_5x5
+python3 storage/generate.py --locations   # Part-DB storage location names
+```
+
+The validator rejects plans where bins overlap, leave the grid or are too tall for the drawer. Each distinct part is rendered once; `storage/out/print-list.md` lists quantities, colours and which bin each file is for.
+
+### Print settings
+
+**`storage/bambu/shelfie-gridfinity-a1.json`** is a Bambu Studio process preset for the **Bambu Lab A1**, tuned for speed and low filament use. Import it with *File → Import → Import Configs*; it appears as "0.28mm Shelfie Gridfinity @BBL A1".
+
+It builds on Bambu's official *0.28mm Extra Draft @BBL A1* profile and changes only: 2 walls with the Arachne wall generator, 3 top and 3 bottom layers, 10 % lightning infill with infill combination, no supports. Speeds stay at Bambu's values, since at 0.28 mm the A1 is limited by how fast the hotend melts PLA.
+
+Full details, drawer layouts, colours and the wall plan: **[docs/storage.md](docs/storage.md)**.
+
 ## Components
 
 | Component | Technology | Runs on |
@@ -57,6 +88,7 @@ It exists to solve one very specific problem:
 | Print server | Python FastAPI, Pillow, `segno`, `ptouch-print`; docker compose + Tailscale sidecar | Raspberry Pi 3 |
 | Infrastructure | Terraform, cloud-init, Ubuntu 24.04 LTS | Azure |
 | Backups | nightly `sqlite3 .backup` + uploads, rsync over Tailscale | → Synology |
+| Storage bins | Gridfinity via cqgridfinity (CadQuery), Bambu Studio preset | Mac → Bambu Lab A1 |
 | CI | GitHub Actions → GitHub Container Registry | GitHub |
 
 ## Repository layout
@@ -69,7 +101,7 @@ shelfie-parts/
 ├── capture-web/    # React + Vite PWA
 ├── print-server/   # FastAPI print service for the Pi (own compose stack + Tailscale sidecar)
 ├── vision/         # vision prompt, JSON schema, identify.py test CLI
-├── storage/        # plan.json (bins and drawers) + generate.py (Gridfinity STLs)
+├── storage/        # plan.json (drawers and bins), generate.py (Gridfinity STLs), bambu/ (A1 print preset)
 ├── scripts/        # backup.sh
 └── docs/           # getting-started.md, storage.md (Gridfinity bins in an IKEA Helmer)
 ```
@@ -92,15 +124,19 @@ shelfie-parts/
 - [x] Vision prompt tested and tuned with real parts
 - [x] Print server on the Raspberry Pi 3 (P700 via `ptouch-print`)
 - [x] Capture API: identify → search → create → print
-- [ ] Capture PWA
+- [ ] Capture PWA (in progress, deployed, needs a phone test)
 - [ ] "Do I already have it?" check from screenshots and AliExpress links
 - [x] Backup script (SQLite snapshot + uploads → rsync)
 - [ ] Nightly backups to the Synology scheduled
-- [ ] CI: build and publish images to GHCR
+- [x] CI: build and publish the capture API image to GHCR
+- [x] Storage plan for the IKEA Helmer and the Multiboard wall
+- [x] Gridfinity generator (`storage/generate.py`) and A1 print preset
+- [ ] First baseplate and bin printed and fitted
+- [ ] Storage-location labels for bins and the location tree in Part-DB
 
 ## Status
 
-🚧 Foundations in place: infrastructure, Part-DB and the vision test CLI. Not yet deployed or tested against Azure.
+🚧 Part-DB, the capture API and the print server are running; the capture PWA is deployed and being tested. The storage plan and print files are ready; nothing printed yet.
 
 ## License
 
