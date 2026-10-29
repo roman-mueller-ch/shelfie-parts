@@ -46,7 +46,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - [x] Print server running on the Pi 3 (2026-10-28; redeploy after changes: rsync `print-server/` to `homelab:apps/shelfie-print/`, then `docker compose up -d --build` there) at `https://labels.tailf98c37.ts.net` (`/health`, `/labels/preview`, `/labels`, `/docs`); test label printed. Loaded tape: 9 mm (52 px), QR modules are 1 dot there but a phone scanned the test label fine (Part-DB URL, ~45 chars); keep URLs short
 - [x] Capture API (2026-10-28) at `https://capture.tailf98c37.ts.net`: identify → stock search → create part → print label (endpoints in docs/getting-started.md §7). Image `ghcr.io/roman-mueller-ch/shelfie-capture-api` (public) built by `.github/workflows/capture-api.yml`. Test data in Part-DB (everything named "ZZ…": parts 1–4 and 6, categories 1–2, manufacturer 1, storage locations ZZ Test box and ZZ Test shelf › ZZ-BIN1) still to delete; categories `Active → ICs → Sensors`, manufacturer Sensirion, footprint SMD and attachment type Photo are real and stay
 - [x] Storage plan (2026-10-28): `docs/storage.md`; drawer inner dimensions still to measure, nothing printed yet
-- [ ] **In progress:** capture PWA (`capture-web/`, React + Vite, served by the capture API from `wwwroot/`): capture → result with stock matches → review → saved with label preview/print. Storage locations resolve by unique leaf name (`D2-A1`, `W-INBOX`), labels show the leaf name. Needs a test on the phone. Print server change (preview uses last seen tape, default 9 mm) is committed but **not yet deployed on the Pi** (`ssh homelab` needed Tailscale re-auth)
+- [ ] **In progress:** capture PWA (`capture-web/`, React + Vite, served by the capture API from `wwwroot/`): capture → result with stock matches → review → saved with label preview/print. Storage locations resolve by unique leaf name (`D2-A1`, `W-INBOX`), labels show the leaf name. Deployed on the VM (2026-10-29); needs a test on the phone and a real print. Print server on the Pi updated too (previews use the last seen tape, default 9 mm)
 - [ ] Storage-location labels for bins (capture API prints part labels only) and creating the `Helmer` location tree in Part-DB
 - [ ] More prompt tuning as needed: passives, product-page screenshots untested
 
@@ -58,7 +58,7 @@ Tailscale prep is done (MagicDNS, HTTPS certificates, two pre-approved one-time 
 - **Turn ProtonVPN off** for anything that downloads from HashiCorp (`brew install`, `terraform init`); with it on, TLS connections to `releases.hashicorp.com` fail or hang.
 - Terraform comes from `hashicorp/tap` (not in Homebrew core anymore). OpenTofu would also work.
 - `terraform init` can hang silently on the large azurerm download; Ctrl+C may not react (use `pkill -9 terraform`, then `rm -rf .terraform .terraform.lock.hcl` and retry).
-- SSH to the Pi: `ssh homelab` (Tailscale SSH enabled). The VM will be `shelfie-vm` on the tailnet.
+- SSH to the Pi: `ssh homelab` (Tailscale SSH enabled). The `homelab` entry in `~/.ssh/config` points to the home LAN IP (192.168.0.128), so away from home use `ssh roman@homelab.tailf98c37.ts.net`. The VM will be `shelfie-vm` on the tailnet.
 - Secrets live only in git-ignored files: `infra/terraform.tfvars`, `deploy/.env`, `vision/.env`. Never commit them.
 
 ## Conventions
