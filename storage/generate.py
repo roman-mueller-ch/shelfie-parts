@@ -134,7 +134,7 @@ def load_plan(path: Path) -> Plan:
 
     side_pad = side_padding(raw)
     for b in d["baseplates"]:
-        w, l = cols * GRU + 2 * side_pad, b["rows"] * GRU
+        w, l = cols * GRU + 2 * side_pad, b["rows"] * GRU + back_padding(raw, b)
         if max(w, l) > BED_MM:
             plan.errors.append(f"baseplate {b['name']} ({w:.0f} × {l:.0f} mm) is larger than the {BED_MM} mm bed")
 
@@ -187,6 +187,15 @@ def side_padding(raw: dict) -> float:
     return max(margin, 0) / 2
 
 
+def back_padding(raw: dict, baseplate: dict) -> float:
+    """Depth left over behind the grid, added to the baseplate marked fill_depth."""
+    if not baseplate.get("fill_depth"):
+        return 0.0
+    d = raw["drawer"]
+    margin = d["inner_mm"]["depth"] - d["grid"]["rows"] * GRU - d.get("fit_clearance_mm", 1.0)
+    return max(margin, 0)
+
+
 # ------------------------------------------------------------------------ reports
 
 def layout_text(plan: Plan, drawer_id: str) -> str:
@@ -217,10 +226,13 @@ def print_list(plan: Plan) -> list[tuple[str, int, list[str], str, str]]:
     pad = side_padding(plan.raw)
     n_drawers = len(plan.raw["drawers"])
     for b in d["baseplates"]:
-        rows.append((baseplate_filename(cols, b["rows"], pad, b["round_corners"]), n_drawers,
-                     [f"{b['name']} of every drawer"], "",
-                     f"{cols}×{b['rows']} baseplate, {pad:.1f} mm side padding, "
-                     f"{cols * GRU + 2 * pad:.0f} × {b['rows'] * GRU:.0f} mm"))
+        back = back_padding(plan.raw, b)
+        desc = f"{cols}×{b['rows']} baseplate, {pad:g} mm side padding"
+        if back:
+            desc += f", {back:g} mm at the back"
+        desc += f", {cols * GRU + 2 * pad:g} × {b['rows'] * GRU + back:g} mm"
+        rows.append((baseplate_filename(cols, b["rows"], pad, b["round_corners"], back), n_drawers,
+                     [f"{b['name']} of every drawer"], "", desc))
     groups: dict[BinSpec, list[PlacedBin]] = defaultdict(list)
     for b in plan.bins:
         groups[b.spec].append(b)
@@ -263,15 +275,19 @@ def locations(plan: Plan) -> list[str]:
 
 # ------------------------------------------------------------------------- render
 
-def baseplate_filename(cols: int, rows: int, pad: float, corners: str) -> str:
-    return f"baseplate_{cols}x{rows}_pad{pad:g}mm_{corners}"
+def baseplate_filename(cols: int, rows: int, pad: float, corners: str, back: float = 0) -> str:
+    name = f"baseplate_{cols}x{rows}_pad{pad:g}mm"
+    if back:
+        name += f"_back{back:g}mm"
+    return f"{name}_{corners}"
 
 
-def render_baseplate(cols: int, rows: int, pad: float, corners: str):
-    """A standard open Gridfinity baseplate, widened by `pad` mm on the left and right.
+def render_baseplate(cols: int, rows: int, pad: float, corners: str, back: float = 0):
+    """A standard open Gridfinity baseplate, widened by `pad` mm on the left and right
+    and by `back` mm at the back (+Y).
 
     Same pocket geometry as cqgridfinity's GridfinityBaseplate, but the outer block is
-    wider and only the corners that sit in a drawer corner are rounded ("front",
+    larger and only the corners that sit in a drawer corner are rounded ("front",
     "back" or "all"); the edges where two baseplates meet stay square.
     """
     import cadquery as cq
@@ -282,9 +298,10 @@ def render_baseplate(cols: int, rows: int, pad: float, corners: str):
     ref = GridfinityBaseplate(cols, rows)
     pocket = ref.extrude_profile(rounded_rect_sketch(GRU_CUT, GRU_CUT, GR_RAD), GR_BASE_PROFILE)
     pocket = rotate_x(pocket, 180).translate((GRU2, GRU2, GR_BASE_HEIGHT))
-    pockets = recentre(composite_from_pts(pocket, ref.grid_centres), "XY")
+    # The grid sits at the front of the plate; the back padding extends it towards +Y.
+    pockets = recentre(composite_from_pts(pocket, ref.grid_centres), "XY").translate((0, -back / 2, 0))
 
-    plate = cq.Workplane("XY").rect(ref.length + 2 * pad, ref.width).extrude(GR_BASE_HEIGHT)
+    plate = cq.Workplane("XY").rect(ref.length + 2 * pad, ref.width + back).extrude(GR_BASE_HEIGHT)
     edges = plate.edges("|Z")
     if corners == "front":
         edges = edges.edges("<Y")
@@ -324,8 +341,9 @@ def render_all(plan: Plan, only: str | None, step: bool) -> None:
 
     jobs = []
     for b in d["baseplates"]:
-        name = baseplate_filename(cols, b["rows"], pad, b["round_corners"])
-        jobs.append((name, lambda b=b: render_baseplate(cols, b["rows"], pad, b["round_corners"])))
+        back = back_padding(plan.raw, b)
+        name = baseplate_filename(cols, b["rows"], pad, b["round_corners"], back)
+        jobs.append((name, lambda b=b, back=back: render_baseplate(cols, b["rows"], pad, b["round_corners"], back)))
     specs = {p.spec for p in plan.bins} | {s for _, s in plan.wall}
     for spec in sorted(specs, key=lambda s: s.filename):
         jobs.append((spec.filename, lambda s=spec: render_bin(s)))

@@ -2,12 +2,12 @@
   "_comment": "Source of truth for the physical storage layout. docs/storage.md explains it; storage/generate.py validates it and renders the STL files. Bin sizes are [across, deep] in Gridfinity units, heights in u (7 mm). A bin's 'at' is its front-left cell: column A-E (left to right), row 1-9 (front to back).",
 
   "drawer": {
-    "inner_mm": { "width": 235, "depth": 380, "height": 85 },
+    "inner_mm": { "width": 230, "depth": 390, "height": 85 },
     "grid": { "columns": 5, "rows": 9 },
     "fit_clearance_mm": 1.0,
     "baseplates": [
       { "name": "front", "rows": 5, "round_corners": "front" },
-      { "name": "back", "rows": 4, "round_corners": "back" }
+      { "name": "back", "rows": 4, "round_corners": "back", "fill_depth": true }
     ]
   },
 

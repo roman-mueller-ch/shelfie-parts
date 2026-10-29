@@ -50,7 +50,7 @@ It exists to solve one very specific problem:
 
 Parts live in **Gridfinity bins in an IKEA Helmer** (6 drawers), plus a small **Multiboard wall area** next to the desk.
 
-- **Drawers:** inside 235 × 380 × 85 mm → a **5 × 9 Gridfinity grid** per drawer, bins up to **9u** tall. Each drawer gets a 5×5 and a 5×4 baseplate with built-in side padding, so no separate spacers are needed.
+- **Drawers:** inside 230 × 390 × 85 mm → a **5 × 9 Gridfinity grid** per drawer, bins up to **9u** tall. Each drawer gets a 5×5 and a 5×4 baseplate with the leftover space built in as padding (9.5 mm at the sides, 11 mm at the back), so no separate spacers are needed.
 - **What goes where:** D1 small loose parts (bins with compartments), D2–D3 bagged AliExpress parts standing upright, D4 modules, D5 dev boards, D6 cables and tools. 55 bins in total, no 1×1 bins.
 - **Wall:** `W-INBOX` for new parcels waiting to be captured, `W-PROJECT` for parts in use.
 - **Naming:** a bin is named after its front-left cell (`D2-A1`) and is a storage location in Part-DB (`Helmer › D2 › D2-A1`). Names describe positions, so labels stay valid when contents change.
