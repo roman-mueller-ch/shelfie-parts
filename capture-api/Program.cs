@@ -118,11 +118,52 @@ app.MapPost("/api/parts/{id:int}/stock", async (int id, AddStockRequest request,
 });
 
 // Print the part's QR label on the P-touch. Body optional: {"title", "subtitle", "copies"}.
-app.MapPost("/api/parts/{id:int}/label", async (int id, LabelRequest? overrides,
+app.MapPost("/api/parts/{id:int}/label", (int id, LabelRequest? overrides,
     PartDbClient partDb, LabelPrinter printer, CancellationToken ct) =>
+    PrintLabel(partDb.GetLabelAsync(id, overrides ?? new(), ct), $"Part {id}", printer, ct));
+
+// The same label as PNG, without printing (for the PWA).
+app.MapGet("/api/parts/{id:int}/label.png", (int id, string? title, string? subtitle,
+    PartDbClient partDb, LabelPrinter printer, CancellationToken ct) =>
+    PreviewLabel(partDb.GetLabelAsync(id, new(title, subtitle), ct), $"Part {id}", printer, ct));
+
+app.MapGet("/api/storage-locations", (PartDbClient partDb, CancellationToken ct) => partDb.StorageLocationsAsync(ct));
+
+// Create a storage location with any missing parents; existing ones are returned as they are.
+// JSON: {"path": ["Helmer", "D2", "D2-A1"]}. storage/generate.py --locations lists the whole plan.
+app.MapPost("/api/storage-locations", async (EnsureLocationRequest request, PartDbClient partDb, CancellationToken ct) =>
 {
-    var label = await partDb.GetLabelAsync(id, overrides ?? new(), ct);
-    if (label is null) return Results.Problem($"Part {id} not found.", statusCode: 404);
+    if (request.Path is not { Count: > 0 } || request.Path.Any(string.IsNullOrWhiteSpace))
+        return Results.Problem("path must be a list of non-empty names.", statusCode: 400);
+    try
+    {
+        return Results.Ok(await partDb.EnsureStorageLocationAsync(request.Path, ct));
+    }
+    catch (PartDbException e)
+    {
+        return Results.Problem(e.Message, statusCode: 502);
+    }
+});
+
+// A bin's label: QR code to the parts in it, the bin name as text. Body optional, as for parts.
+app.MapPost("/api/storage-locations/{id:int}/label", (int id, LabelRequest? overrides,
+    PartDbClient partDb, LabelPrinter printer, CancellationToken ct) =>
+    PrintLabel(partDb.GetLocationLabelAsync(id, overrides ?? new(), ct), $"Storage location {id}", printer, ct));
+
+app.MapGet("/api/storage-locations/{id:int}/label.png", (int id, string? title, string? subtitle,
+    PartDbClient partDb, LabelPrinter printer, CancellationToken ct) =>
+    PreviewLabel(partDb.GetLocationLabelAsync(id, new(title, subtitle), ct), $"Storage location {id}", printer, ct));
+
+// Unknown /api paths are 404s; everything else is the PWA.
+app.MapFallback("/api/{**path}", () => Results.Problem("Not found.", statusCode: 404));
+app.MapFallbackToFile("index.html");
+
+app.Run();
+
+static async Task<IResult> PrintLabel(Task<LabelContent?> content, string what, LabelPrinter printer, CancellationToken ct)
+{
+    var label = await content;
+    if (label is null) return Results.Problem($"{what} not found.", statusCode: 404);
     try
     {
         using var result = await printer.PrintAsync(label, ct);
@@ -132,14 +173,12 @@ app.MapPost("/api/parts/{id:int}/label", async (int id, LabelRequest? overrides,
     {
         return Results.Problem($"Printing failed: {e.Message}", statusCode: 502);
     }
-});
+}
 
-// The same label as PNG, without printing (for the PWA).
-app.MapGet("/api/parts/{id:int}/label.png", async (int id, string? title, string? subtitle,
-    PartDbClient partDb, LabelPrinter printer, CancellationToken ct) =>
+static async Task<IResult> PreviewLabel(Task<LabelContent?> content, string what, LabelPrinter printer, CancellationToken ct)
 {
-    var label = await partDb.GetLabelAsync(id, new(title, subtitle), ct);
-    if (label is null) return Results.Problem($"Part {id} not found.", statusCode: 404);
+    var label = await content;
+    if (label is null) return Results.Problem($"{what} not found.", statusCode: 404);
     try
     {
         return Results.File(await printer.PreviewAsync(label, ct), "image/png");
@@ -148,15 +187,9 @@ app.MapGet("/api/parts/{id:int}/label.png", async (int id, string? title, string
     {
         return Results.Problem($"Preview failed: {e.Message}", statusCode: 502);
     }
-});
+}
 
-app.MapGet("/api/storage-locations", (PartDbClient partDb, CancellationToken ct) => partDb.StorageLocationsAsync(ct));
-
-// Unknown /api paths are 404s; everything else is the PWA.
-app.MapFallback("/api/{**path}", () => Results.Problem("Not found.", statusCode: 404));
-app.MapFallbackToFile("index.html");
-
-app.Run();
+sealed record EnsureLocationRequest(IReadOnlyList<string>? Path);
 
 partial class Program
 {

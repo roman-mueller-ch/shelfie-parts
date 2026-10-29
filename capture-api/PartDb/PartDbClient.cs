@@ -16,7 +16,7 @@ public sealed record StockMatch(
     string Url,
     string MatchedTerm);
 
-public sealed record StorageLocation(string Name, string Path);
+public sealed record StorageLocation(int Id, string Name, string Path);
 
 /// <summary>Talks to Part-DB's REST API (API Platform) with a personal API token.</summary>
 public sealed class PartDbClient
@@ -182,10 +182,36 @@ public sealed class PartDbClient
     {
         using var doc = await GetAsync("storage_locations?itemsPerPage=1000", ct);
         return doc.RootElement.EnumerateArray()
-            .Select(e => new StorageLocation(Str(e, "name") ?? "", Str(e, "full_path")?.Replace(" → ", " / ") ?? ""))
+            .Select(ToLocation)
             .Where(l => l.Name != "")
             .OrderBy(l => l.Path, StringComparer.OrdinalIgnoreCase).ToList();
     }
+
+    /// <summary>The storage location at <paramref name="path"/> (e.g. ["Helmer", "D2", "D2-A1"]), creating missing levels.</summary>
+    public async Task<StorageLocation> EnsureStorageLocationAsync(IReadOnlyList<string> path, CancellationToken ct)
+    {
+        var iri = await ResolvePathAsync("storage_locations", path, ct);
+        using var doc = await GetAsync(iri["/api/".Length..], ct);
+        return ToLocation(doc.RootElement);
+    }
+
+    /// <summary>Label for a bin: its name (e.g. "D2-A1") as title; the QR code opens the parts in it.</summary>
+    public async Task<LabelContent?> GetLocationLabelAsync(int id, LabelRequest overrides, CancellationToken ct)
+    {
+        using var response = await _http.GetAsync($"storage_locations/{id}", ct);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+        if (!response.IsSuccessStatusCode) throw new PartDbException($"Part-DB {(int)response.StatusCode} for GET storage_locations/{id}");
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
+
+        return new LabelContent(
+            NullIfEmpty(overrides.Title) ?? Str(doc.RootElement, "name") ?? $"Location {id}",
+            NullIfEmpty(overrides.Subtitle),
+            $"{_baseUrl}/scan/location/{id}",
+            Math.Clamp(overrides.Copies, 1, 20));
+    }
+
+    private static StorageLocation ToLocation(JsonElement e) =>
+        new(e.GetProperty("id").GetInt32(), Str(e, "name") ?? "", Str(e, "full_path")?.Replace(" → ", " / ") ?? "");
 
     /// <summary>Label text for a part: MPN (or name) as title, storage location name (e.g. "D2-A1") or part name as subtitle.</summary>
     public async Task<LabelContent?> GetLabelAsync(int id, LabelRequest overrides, CancellationToken ct)

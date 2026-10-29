@@ -185,6 +185,16 @@ Ready-made shelves: [Multiboard Gridfinity Shelf](https://www.printables.com/mod
 - One label per bin: QR code linking to the bin's storage location in Part-DB, plus the bin name (`D2-A1`).
 - Scanning a bin's label shows everything in it.
 - Keep QR contents short. On 9 mm tape a QR module is a single dot; a ~45-character Part-DB URL scanned fine in testing.
+- **Printing:** in the capture app, *Bin labels* (top right). Filter by drawer (`D2`) and print one bin or all shown. D1's compartments are hidden unless you tick *Show compartments*.
+
+## Part-DB locations
+
+The location tree comes from the plan: `storage/sync_locations.py` creates every drawer, bin, compartment and wall location that Part-DB doesn't have yet, through the capture API. Run it again after changing `plan.json`; it never deletes or renames, so remove or rename retired bins in Part-DB by hand.
+
+```bash
+python3 storage/sync_locations.py --dry-run   # what's missing
+python3 storage/sync_locations.py
+```
 
 ## Workflow
 
@@ -198,6 +208,6 @@ Ready-made shelves: [Multiboard Gridfinity Shelf](https://www.printables.com/mod
 - [x] Measure a drawer: 230 × 390 × 85 mm → 5×9 grid, max 9u
 - [ ] Confirm both baseplates fit with the test print
 - [ ] First real run of `storage/generate.py` on the Mac (written and validated without CadQuery; rendering untested)
-- [ ] Create the storage location trees in Part-DB (`Helmer › D1…D6 › bins`, `Wall › W-INBOX / W-PROJECT`)
-- [ ] Bin labels: the capture API prints part labels today; storage-location labels are still missing
+- [x] Create the storage location trees in Part-DB (2026-10-29: 109 locations from `plan.json`)
+- [x] Bin labels: *Bin labels* screen in the capture app (real print still to test)
 - [ ] PWA: "scan bin, then photograph part" flow

@@ -125,6 +125,7 @@ export const labelPreviewUrl = (id: number, subtitle?: string) =>
   `/api/parts/${id}/label.png` + (subtitle ? `?subtitle=${encodeURIComponent(subtitle)}` : "");
 
 export interface StorageLocation {
+  id: number;
   name: string; // e.g. "D2-A1", unique on its own
   path: string; // e.g. "Helmer / D2 / D2-A1"
 }
@@ -133,3 +134,10 @@ export async function storageLocations(): Promise<StorageLocation[]> {
   const response = await check(await fetch("/api/storage-locations"));
   return response.json();
 }
+
+/** A bin's label: QR code to the parts in it, the bin name as text. */
+export async function printLocationLabel(id: number): Promise<void> {
+  await check(await fetch(`/api/storage-locations/${id}/label`, { method: "POST" }));
+}
+
+export const locationLabelPreviewUrl = (id: number) => `/api/storage-locations/${id}/label.png`;

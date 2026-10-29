@@ -48,7 +48,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - [x] Storage plan (2026-10-28): `docs/storage.md`; drawer measured 2026-10-29 (230×390×85 mm, 5×9 grid), nothing printed yet
 - [ ] **In progress:** capture PWA (`capture-web/`, React + Vite, served by the capture API from `wwwroot/`): capture → result with stock matches ("+ Add to stock" restocks an existing part via `POST /api/parts/{id}/stock`, label only for a new bin, "print anyway" with an editable bin name otherwise; "add as new" is secondary) → review → saved with label preview/print. Storage locations resolve by unique leaf name (`D2-A1`, `W-INBOX`), labels show the leaf name. Deployed on the VM (2026-10-29); needs a test on the phone and a real print. Print server on the Pi updated too (previews use the last seen tape, default 9 mm)
 - [ ] `storage/generate.py` rendering untested (CadQuery couldn't be installed where it was written): first `uv run` on the Mac
-- [ ] Storage-location labels for bins (capture API prints part labels only) and creating the `Helmer` location tree in Part-DB
+- [x] Storage locations in Part-DB (2026-10-29): `storage/sync_locations.py` created the plan's 109 locations (`Helmer › D1…D6 › bins › D1 compartments`, `Wall › W-INBOX / W-PROJECT`) via `POST /api/storage-locations`. Bin labels: *Bin labels* screen in the PWA (QR → `/scan/location/{id}`, bin name as title); preview checked, real print still to do
 - [ ] More prompt tuning as needed: passives, product-page screenshots untested
 
 Tailscale prep is done (MagicDNS, HTTPS certificates, two pre-approved one-time auth keys).

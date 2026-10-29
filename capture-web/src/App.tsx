@@ -4,7 +4,9 @@ import {
   createPart,
   identify,
   labelPreviewUrl,
+  locationLabelPreviewUrl,
   printLabel,
+  printLocationLabel,
   storageLocations,
   type CreatedPart,
   type IdentifiedItem,
@@ -19,7 +21,8 @@ type Screen =
   | { kind: "result"; result: IdentifyResult }
   | { kind: "review"; result: IdentifyResult; index: number }
   | { kind: "restock"; result: IdentifyResult; index: number; match: StockMatch }
-  | { kind: "saved"; result: IdentifyResult; done: Done };
+  | { kind: "saved"; result: IdentifyResult; done: Done }
+  | { kind: "bins" };
 
 /** What the last screen shows: a new part or restocked one. */
 interface Done {
@@ -51,6 +54,7 @@ export default function App() {
     <main>
       <header>
         <h1 onClick={restart}>Shelfie</h1>
+        {screen.kind !== "bins" && <button className="link" onClick={() => setScreen({ kind: "bins" })}>Bin labels</button>}
       </header>
       {screen.kind === "capture" && (
         <Capture photos={photos} setPhotos={setPhotos} onResult={(result) => setScreen({ kind: "result", result })} />
@@ -88,6 +92,7 @@ export default function App() {
           onRestart={restart}
         />
       )}
+      {screen.kind === "bins" && <Bins onBack={restart} />}
     </main>
   );
 }
@@ -406,6 +411,82 @@ function Saved(props: { done: Done; hasMoreItems: boolean; onBack: () => void; o
       <a className="button secondary" href={done.url} target="_blank" rel="noreferrer">Open in Part-DB</a>
       {hasMoreItems && <button className="secondary" onClick={onBack}>Back to the other parts</button>}
       <button className="secondary" onClick={onRestart}>Next part</button>
+    </section>
+  );
+}
+
+// ------------------------------------------------------------------ bin labels
+
+// Compartments of a divided bin are named like "D1-A1.3" (docs/storage.md); they rarely need their own label.
+const isCompartment = (l: StorageLocation) => /\.\d+$/.test(l.name);
+
+function Bins(props: { onBack: () => void }) {
+  const [locations, setLocations] = useState<StorageLocation[] | null>(null);
+  const [filter, setFilter] = useState("");
+  const [compartments, setCompartments] = useState(false);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [printed, setPrinted] = useState<Set<number>>(new Set());
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    storageLocations().then(setLocations).catch((e) => setError((e as Error).message));
+  }, []);
+
+  const q = filter.trim().toLowerCase();
+  const shown = (locations ?? []).filter(
+    (l) => (compartments || !isCompartment(l)) && (!q || l.path.toLowerCase().includes(q)),
+  );
+
+  const print = async (list: StorageLocation[]) => {
+    setError(null);
+    for (const [i, l] of list.entries()) {
+      setBusy(list.length > 1 ? `Printing ${i + 1} of ${list.length}…` : "Printing…");
+      try {
+        await printLocationLabel(l.id);
+        setPrinted((p) => new Set(p).add(l.id));
+      } catch (e) {
+        setError(`${l.name}: ${(e as Error).message}`);
+        break;
+      }
+    }
+    setBusy(null);
+  };
+
+  const printAll = () => {
+    if (window.confirm(`Print ${shown.length} labels?`)) print(shown);
+  };
+
+  return (
+    <section>
+      <h2>Bin labels</h2>
+      <p className="muted">Scanning a bin's label opens the list of parts in it.</p>
+      <label>Filter<input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="e.g. D2 or Wall" /></label>
+      <label className="check">
+        <input type="checkbox" checked={compartments} onChange={(e) => setCompartments(e.target.checked)} />
+        Show compartments (D1-A1.1 …)
+      </label>
+      {locations === null && !error && <p className="muted">Loading…</p>}
+      <ul className="locations">
+        {shown.map((l) => (
+          <li key={l.id}>
+            <div className="match">
+              <button className="link" onClick={() => setSelected(selected === l.id ? null : l.id)}>
+                <strong>{l.name}</strong> <span className="muted">{l.path}</span>
+              </button>
+              {printed.has(l.id) && <span className="muted">✓</span>}
+              <button className="small" disabled={busy !== null} onClick={() => print([l])}>🏷 Print</button>
+            </div>
+            {selected === l.id && <img className="label" src={locationLabelPreviewUrl(l.id)} alt={`Label for ${l.name}`} />}
+          </li>
+        ))}
+      </ul>
+      {error && <p className="error">{error}</p>}
+      {busy && <p className="muted">{busy}</p>}
+      {shown.length > 1 && (
+        <button className="primary" disabled={busy !== null} onClick={printAll}>Print all {shown.length} shown</button>
+      )}
+      <button className="secondary" onClick={props.onBack}>Back to capture</button>
     </section>
   );
 }
