@@ -66,6 +66,8 @@ uv run storage/generate.py --only baseplate_5x5
 python3 storage/generate.py --locations   # Part-DB storage location names
 ```
 
+**`storage/plates.py`** packs the bins still to be printed onto full A1 plates (one colour each) and writes ready-to-slice 3MF files, with how often to print each plate.
+
 The validator rejects plans where bins overlap, leave the grid or are too tall for the drawer. Each distinct part is rendered once; `storage/out/print-list.md` lists quantities, colours and which bin each file is for.
 
 ### Print settings
@@ -101,7 +103,7 @@ shelfie-parts/
 ├── capture-web/    # React + Vite PWA
 ├── print-server/   # FastAPI print service for the Pi (own compose stack + Tailscale sidecar)
 ├── vision/         # vision prompt, JSON schema, identify.py test CLI
-├── storage/        # plan.json (drawers and bins), generate.py (Gridfinity STLs), bambu/ (A1 print preset)
+├── storage/        # plan.json (drawers and bins), generate.py (Gridfinity STLs), plates.py (A1 plates as 3MF), bambu/ (A1 print preset)
 ├── scripts/        # backup.sh
 └── docs/           # getting-started.md, storage.md (Gridfinity bins in an IKEA Helmer)
 ```

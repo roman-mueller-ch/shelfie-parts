@@ -13,6 +13,9 @@
 
   "defaults": { "lite": true, "labels": true, "scoops": false },
 
+  "_printed_comment": "Bins already printed (bin names, W-PROJECT once per copy). storage/plates.py leaves them out.",
+  "printed": ["D2-A1"],
+
   "drawers": [
     {
       "id": "D1",

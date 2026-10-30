@@ -122,6 +122,24 @@ Both fit the A1's 256 × 256 mm bed. Magnets aren't needed; bins in a drawer don
 
 55 bins in total for all six drawers.
 
+### Print plates
+
+**`storage/plates.py`** packs the bins that are still missing onto full A1 plates, one colour per plate, and writes a 3MF per plate:
+
+```bash
+python3 storage/plates.py --check          # show the plates (no CAD needed)
+uv run storage/plates.py                   # write storage/out/plates/plate_*.3mf and plates.md
+uv run storage/plates.py --colour blue     # only one colour
+```
+
+- The bed is used as a 5 × 5 grid of cells with ~6.5 mm gaps and a 10 mm margin (clear of the A1's purge line). A plate holds e.g. four 2×3 bins in a pinwheel, or five to seven smaller ones.
+- **Identical plates are written once** with a print count: `plate_blue-A.3mf` × 2 means print that file twice. `plates.md` lists which bins (`D2-A4`, …) each run produces, so you know which labels to stick on.
+- Each bin in the 3MF is named after its location, so Bambu Studio's object list shows `D2-A4 2x3x9u` etc.
+- **After printing**, add the bins to `"printed"` in `plan.json` and run it again; the next plates only contain what's left.
+- Meshes come from the STLs in `storage/out/`; missing ones are rendered first.
+
+In Bambu Studio, open the 3MF, choose the Shelfie process preset and the filament, and slice. If the import moves the bins around, *Arrange* (A) packs them again.
+
 **Start with a test print:** the front 5×5 baseplate and one 2×3 bin at 9u with a label tab. Check that the baseplate sits flat between the side walls, that the bin drops in and lifts out easily, that the drawer closes with a bag standing in the bin, and that a 9 mm label fits the tab. Then the back baseplate, to check the fit front to back, then the rest of D2, then D1.
 
 **What the generator makes:** bins with a stacking lip and a label shelf (12 mm wide, fits the 9 mm tape), no magnet holes. Bins are "lite" style (thin shell, no raised floor) to save filament, except D1, which has a solid floor with compartments and scoop-shaped floors so tiny parts are easy to pick out. Per-bin options (`lite`, `labels`, `scoops`, `compartments`) live in `plan.json`.
