@@ -1,4 +1,6 @@
-# Shelfie 📸📦
+<img src="brand/shelfie-icon.svg" width="96" alt="Shelfie icon">
+
+# Shelfie
 
 **Snap a part. Know what you have.**
 
@@ -105,6 +107,7 @@ shelfie-parts/
 ├── vision/         # vision prompt, JSON schema, identify.py test CLI
 ├── storage/        # plan.json (drawers and bins), generate.py (Gridfinity STLs), plates.py (A1 plates as 3MF), bambu/ (A1 print preset)
 ├── scripts/        # backup.sh
+├── brand/          # logo and app icons (SVG masters, rendered PNGs, render.mjs)
 └── docs/           # getting-started.md, storage.md (Gridfinity bins in an IKEA Helmer), what-goes-where.md, drawer-layouts.md
 ```
 
