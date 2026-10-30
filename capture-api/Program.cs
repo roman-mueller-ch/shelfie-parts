@@ -129,6 +129,19 @@ app.MapGet("/api/parts/{id:int}/label.png", (int id, string? title, string? subt
 
 app.MapGet("/api/storage-locations", (PartDbClient partDb, CancellationToken ct) => partDb.StorageLocationsAsync(ct));
 
+// Where a new part should go: ?category=Modules&category=Sensor&bagged=true (rules in docs/what-goes-where.md).
+app.MapGet("/api/bins/suggest", async (string[]? category, bool? bagged, PartDbClient partDb, CancellationToken ct) =>
+{
+    try
+    {
+        return Results.Ok(await partDb.SuggestBinAsync(category ?? [], bagged ?? true, ct));
+    }
+    catch (PartDbException e)
+    {
+        return Results.Problem(e.Message, statusCode: 502);
+    }
+});
+
 // Create a storage location with any missing parents; existing ones are returned as they are.
 // JSON: {"path": ["Helmer", "D2", "D2-A1"]}. storage/generate.py --locations lists the whole plan.
 app.MapPost("/api/storage-locations", async (EnsureLocationRequest request, PartDbClient partDb, CancellationToken ct) =>

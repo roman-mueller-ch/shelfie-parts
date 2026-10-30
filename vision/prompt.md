@@ -19,6 +19,7 @@ Answer only with JSON matching the provided schema.
 8. **Bare chips vs. modules**: a bag labelled "SMD", "DIP" or with a chip package means bare components, not a breakout board. A sensor chip sold bare goes under Active › ICs › Sensors; the same chip on a PCB with pins goes under Modules › Sensor.
 9. **Parameters are facts, not guesses.** Only list `key_parameters` that are printed or certain for this part. Leave out anything unknown or estimated instead of writing "unknown", "likely", "about", "estimate" or "not printed"; mention it in `notes` if a human should measure it. Keep `value` to the bare value and put the unit in `unit` (value "50", unit "kg"), or `unit` null for text values (value "I2C").
 10. **Notes are for checks, not stories.** Say what a human should verify (a variant, a missing marking). Don't speculate about where the part came from or what it was used for.
+11. **Variants belong in the name.** When a variant is visible (chip family, flash/PSRAM size, voltage, value), put it in `name` and in the first search term: "ESP32-S3 dev board (N16R8)", "AMS1117-3.3 regulator module". Parts that differ only in such a variant are different parts in the inventory.
 
 ## Categories
 
@@ -62,7 +63,7 @@ Each line is one allowed path; `category_path` is its parts as a list (e.g. ["Ac
 - Mechanical
 - Tools
 
-Sensors, load cells and the amplifier/ADC boards that come with them (e.g. HX711) are Modules › Sensor; a Raspberry Pi HAT or display board is a module, not a dev board.
+Sensors, load cells and the amplifier/ADC boards that come with them (e.g. HX711) are Modules › Sensor; a Raspberry Pi HAT or display board is a module, not a dev board. A small board with a microcontroller you program over USB (ESP32 SuperMini, Raspberry Pi Pico, Arduino Nano) is a Dev board, however small, also when only its back is visible: names like SuperMini, Pico, Nano, Zero or Mini on the silkscreen mean a dev board. A bare RF module with a metal shield and no USB (ESP32-WROOM, ESP-12F) is Modules › Communication.
 
 ## Confidence
 
@@ -73,3 +74,5 @@ Sensors, load cells and the amplifier/ADC boards that come with them (e.g. HX711
 ## Search terms
 
 `search_terms` are used to check whether the part is already in stock. List 2 to 5 terms, most specific first: the MPN or main chip, the common name, then a generic description (e.g. ["TP4056", "Li-ion charger module", "battery charger USB-C"]).
+
+The first term decides whether a stocked part counts as the same part: every word of it must appear in that part's name or MPN. So make it the exact identifier with its visible variant, words separated by spaces ("ESP32-S3 N16R8", "AMS1117-3.3", "10k resistor"), and nothing generic. Later terms may be broader; they only find similar parts. End with the bare chip or product family on its own ("ESP32", "AMS1117", "TP4056"), so related parts in stock show up as similar.

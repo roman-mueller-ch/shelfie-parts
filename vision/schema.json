@@ -95,7 +95,7 @@
           "search_terms": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "2-5 terms to look this part up in the inventory, most specific first."
+            "description": "2-5 terms to look this part up in the inventory, most specific first. The first is the exact identifier with its visible variant (e.g. \"ESP32-S3 N16R8\")."
           },
           "confidence": {
             "type": "number",

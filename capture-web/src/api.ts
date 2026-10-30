@@ -29,6 +29,7 @@ export interface StockMatch {
   locations: string[];
   url: string;
   matched_term: string;
+  same: boolean; // the same part, not just a similar one (ESP32-S3 vs ESP32-C3)
 }
 
 export interface IdentifyResult {
@@ -59,6 +60,9 @@ export interface CreatedPart {
   url: string;
   scan_url: string;
   photos: number;
+  location: string | null;
+  location_id: number | null;
+  new_bin: boolean; // nothing was stored in the location before: its bin needs a label
 }
 
 async function check(response: Response): Promise<Response> {
@@ -97,6 +101,8 @@ export interface StockAdded {
   total_amount: number;
   location: string | null;
   new_lot: boolean; // a location the part wasn't in yet
+  location_id: number | null;
+  new_bin: boolean;
 }
 
 export async function addStock(id: number, quantity: number, location: string[]): Promise<StockAdded> {
@@ -141,3 +147,19 @@ export async function printLocationLabel(id: number): Promise<void> {
 }
 
 export const locationLabelPreviewUrl = (id: number) => `/api/storage-locations/${id}/label.png`;
+
+/** Where a new part should go, from its category (docs/what-goes-where.md). */
+export interface BinSuggestion {
+  drawers: string[];
+  reason: string;
+  bin: string | null; // the bin being filled, else the first empty one
+  filling: boolean;
+  empty_bins: string[]; // in plan order, for "bin full → next bin"
+}
+
+export async function suggestBin(category: string[], bagged: boolean): Promise<BinSuggestion> {
+  const q = new URLSearchParams(category.map((c) => ["category", c]));
+  q.set("bagged", String(bagged));
+  const response = await check(await fetch(`/api/bins/suggest?${q}`));
+  return response.json();
+}

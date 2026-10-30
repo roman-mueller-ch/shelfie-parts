@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using CaptureApi.Labels;
 using CaptureApi.Vision;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,9 @@ public sealed record StockMatch(
     double TotalAmount,
     IReadOnlyList<string> Locations,
     string Url,
-    string MatchedTerm);
+    string MatchedTerm,
+    /// <summary>The same part, not just a similar one (ESP32-S3 vs ESP32-C3); only these are offered for restocking.</summary>
+    bool Same);
 
 public sealed record StorageLocation(int Id, string Name, string Path);
 
@@ -55,14 +58,32 @@ public sealed class PartDbClient
                 using var doc = await GetAsync($"parts?{field}={Uri.EscapeDataString(pattern)}&itemsPerPage={MaxMatches}", ct);
                 foreach (var part in doc.RootElement.EnumerateArray())
                 {
-                    var match = ToMatch(part, term);
+                    var match = ToMatch(part, term, item);
                     matches.TryAdd(match.Id, match);
                 }
             }
             if (matches.Count >= MaxMatches) break;
         }
-        return matches.Values.Take(MaxMatches).ToList();
+        return matches.Values.OrderByDescending(m => m.Same).Take(MaxMatches).ToList();
     }
+
+    /// <summary>
+    /// Whether a stocked part is the identified one, not just similar: equal MPNs when both have one,
+    /// otherwise every word of the most specific search term (e.g. "ESP32-S3 N16R8") in its name or MPN.
+    /// </summary>
+    internal static bool IsSamePart(IdentifiedItem item, string partName, string? partMpn)
+    {
+        if (!string.IsNullOrWhiteSpace(item.Mpn) && !string.IsNullOrWhiteSpace(partMpn))
+            return Words(item.Mpn).SetEquals(Words(partMpn));
+        var key = Words(item.SearchTerms.FirstOrDefault() ?? item.Mpn ?? item.Name);
+        return key.Count > 0 && key.IsSubsetOf(Words($"{partName} {partMpn}"));
+    }
+
+    /// <summary>"ESP32-S3 dev board (N16R8)" → {ESP32S3, DEV, BOARD, N16R8}.</summary>
+    private static HashSet<string> Words(string s) =>
+        Regex.Split(s, @"[\s(),;/]+")
+            .Select(w => Regex.Replace(w.ToUpperInvariant(), "[^A-Z0-9]", ""))
+            .Where(w => w.Length > 0).ToHashSet();
 
     /// <summary>
     /// Creates the part with its stock lot, parameters and photos (the first becomes the preview picture).
@@ -88,6 +109,8 @@ public sealed class PartDbClient
 
         var id = (await PostAsync("parts", part, ct)).RootElement.GetProperty("id").GetInt32();
         var partIri = $"/api/parts/{id}";
+        StorageLocation? location = null;
+        var newBin = false;
         try
         {
             var lot = new Dictionary<string, object?>
@@ -97,7 +120,13 @@ public sealed class PartDbClient
                 ["instock_unknown"] = request.Quantity is null,
             };
             if (request.StorageLocationPath is { Count: > 0 })
-                lot["storage_location"] = await ResolvePathAsync("storage_locations", request.StorageLocationPath, ct);
+            {
+                var iri = await ResolvePathAsync("storage_locations", request.StorageLocationPath, ct);
+                lot["storage_location"] = iri;
+                newBin = !(await LotLocationsAsync(ct)).Contains(iri);
+                using var loc = await GetAsync(iri["/api/".Length..], ct);
+                location = ToLocation(loc.RootElement);
+            }
             (await PostAsync("part_lots", lot, ct)).Dispose();
 
             foreach (var p in request.KeyParameters ?? [])
@@ -123,7 +152,8 @@ public sealed class PartDbClient
             throw;
         }
 
-        return new CreatedPart(id, request.Name.Trim(), $"{_baseUrl}/en/part/{id}", $"{_baseUrl}/scan/part/{id}", photos.Count);
+        return new CreatedPart(id, request.Name.Trim(), $"{_baseUrl}/en/part/{id}", $"{_baseUrl}/scan/part/{id}", photos.Count,
+            location?.Name, location?.Id, newBin);
     }
 
     /// <summary>
@@ -147,6 +177,7 @@ public sealed class PartDbClient
             : lots.FirstOrDefault(x => LocationIri(x) == locationIri);
 
         var newLot = lot.ValueKind != JsonValueKind.Object;
+        var newBin = newLot && locationIri is not null && !(await LotLocationsAsync(ct)).Contains(locationIri);
         if (!newLot)
         {
             var unknown = lot.TryGetProperty("instock_unknown", out var u) && u.ValueKind == JsonValueKind.True;
@@ -170,12 +201,50 @@ public sealed class PartDbClient
             .FirstOrDefault();
         return new StockAdded(id, Str(updated, "name") ?? "", $"{_baseUrl}/en/part/{id}", request.Quantity,
             updated.TryGetProperty("total_instock", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetDouble() : 0,
-            location, newLot);
+            location, newLot,
+            locationIri is null ? null : int.Parse(locationIri["/api/storage_locations/".Length..]), newBin);
     }
 
+    // Embedded in a part, a lot's storage_location is an object; from /api/part_lots it can be an IRI.
     private static string? LocationIri(JsonElement lot) =>
-        lot.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object
-            ? $"/api/storage_locations/{s.GetProperty("id").GetInt32()}" : null;
+        !lot.TryGetProperty("storage_location", out var s) ? null : s.ValueKind switch
+        {
+            JsonValueKind.Object => $"/api/storage_locations/{s.GetProperty("id").GetInt32()}",
+            JsonValueKind.String => s.GetString(),
+            _ => null,
+        };
+
+    /// <summary>The location IRI of every stock lot, newest first.</summary>
+    private async Task<List<string?>> LotLocationsAsync(CancellationToken ct)
+    {
+        using var doc = await GetAsync("part_lots?itemsPerPage=10000&order%5BaddedDate%5D=desc", ct);
+        return doc.RootElement.EnumerateArray().Select(LocationIri).ToList();
+    }
+
+    /// <summary>
+    /// Where a new part should go (see <see cref="BinSuggestion"/>). Bins are the leaves under the drawers
+    /// (in D1 the compartments), in plan order: storage/sync_locations.py creates them in that order.
+    /// </summary>
+    public async Task<BinSuggestion> SuggestBinAsync(IReadOnlyList<string> categoryPath, bool bagged, CancellationToken ct)
+    {
+        var rule = DrawerRules.For(categoryPath, bagged);
+        var all = await StorageLocationsAsync(ct);
+        int DrawerIndex(StorageLocation l) =>
+            rule.Drawers.ToList().FindIndex(d => l.Path.StartsWith($"Helmer / {d} / ", StringComparison.OrdinalIgnoreCase));
+        var bins = all
+            .Where(l => DrawerIndex(l) >= 0 && !all.Any(c => c.Path.StartsWith(l.Path + " / ", StringComparison.Ordinal)))
+            .OrderBy(DrawerIndex).ThenBy(l => l.Id).ToList();
+        var iri = bins.ToDictionary(b => b, b => $"/api/storage_locations/{b.Id}");
+
+        var lots = await LotLocationsAsync(ct);
+        var used = lots.OfType<string>().ToHashSet();
+        var empty = bins.Where(b => !used.Contains(iri[b])).ToList();
+        var filling = rule.OnePartPerBin ? null
+            : lots.Select(l => bins.FirstOrDefault(b => iri[b] == l)).FirstOrDefault(b => b is not null);
+
+        return new BinSuggestion(rule.Drawers, rule.Reason, (filling ?? empty.FirstOrDefault())?.Name, filling is not null,
+            empty.Select(b => b.Name).ToList());
+    }
 
     /// <summary>All storage locations as name + full path (e.g. "D2-A1", "Helmer / D2 / D2-A1"), for suggestions in the PWA.</summary>
     public async Task<IReadOnlyList<StorageLocation>> StorageLocationsAsync(CancellationToken ct)
@@ -334,21 +403,24 @@ public sealed class PartDbClient
         return await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
 
-    private StockMatch ToMatch(JsonElement part, string term)
+    private StockMatch ToMatch(JsonElement part, string term, IdentifiedItem item)
     {
         var id = part.GetProperty("id").GetInt32();
         var lots = part.TryGetProperty("partLots", out var l) && l.ValueKind == JsonValueKind.Array
             ? l.EnumerateArray().ToList() : [];
+        var name = part.GetProperty("name").GetString() ?? "";
+        var mpn = NullIfEmpty(Str(part, "manufacturer_product_number"));
         return new StockMatch(
             id,
-            part.GetProperty("name").GetString() ?? "",
-            NullIfEmpty(Str(part, "manufacturer_product_number")),
+            name,
+            mpn,
             part.TryGetProperty("category", out var c) && c.ValueKind == JsonValueKind.Object ? Str(c, "full_path") : null,
             part.TryGetProperty("total_instock", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetDouble() : 0,
             lots.Select(lot => lot.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "name") : null)
                 .OfType<string>().Distinct().ToList(),
             $"{_baseUrl}/en/part/{id}",
-            term);
+            term,
+            IsSamePart(item, name, mpn));
     }
 
     private static string? Str(JsonElement e, string name) =>

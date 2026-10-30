@@ -21,10 +21,16 @@ public sealed record CreatePartRequest(
     /// <summary>E.g. ["Shelf A", "Box 4"]. Empty: no stock lot location.</summary>
     IReadOnlyList<string>? StorageLocationPath = null);
 
-public sealed record CreatedPart(int Id, string Name, string Url, string ScanUrl, int Photos);
+/// <summary><paramref name="NewBin"/>: nothing was stored in the location before (its bin needs a label).</summary>
+public sealed record CreatedPart(int Id, string Name, string Url, string ScanUrl, int Photos,
+    string? Location = null, int? LocationId = null, bool NewBin = false);
 
 /// <summary>Stock to add to an existing part. Without a location, the part's first stock lot gets it.</summary>
 public sealed record AddStockRequest(double Quantity, IReadOnlyList<string>? StorageLocationPath = null);
 
-/// <summary><paramref name="NewLot"/>: the stock went into a location the part wasn't in yet (its box needs a label).</summary>
-public sealed record StockAdded(int Id, string Name, string Url, double Added, double TotalAmount, string? Location, bool NewLot);
+/// <summary>
+/// <paramref name="NewLot"/>: the stock went into a location the part wasn't in yet (its box needs a label).
+/// <paramref name="NewBin"/>: nothing was stored in that location before (the bin needs a label too).
+/// </summary>
+public sealed record StockAdded(int Id, string Name, string Url, double Added, double TotalAmount, string? Location, bool NewLot,
+    int? LocationId = null, bool NewBin = false);

@@ -150,11 +150,12 @@ For local development (`dotnet run` in `capture-api/`), the secrets go into `dot
 
 | Endpoint | |
 |---|---|
-| `POST /api/identify` | multipart `images` (1–4) + optional `hint` → identification + matching parts in stock |
-| `POST /api/parts` | multipart `part` (JSON) + optional `photos` → creates the part with stock lot, parameters, photos |
+| `POST /api/identify` | multipart `images` (1–4) + optional `hint` → identification + matching parts in stock (`same: true` = the same part, else only similar) |
+| `POST /api/parts` | multipart `part` (JSON) + optional `photos` → creates the part with stock lot, parameters, photos (`new_bin: true` if nothing was in that location before) |
 | `POST /api/parts/{id}/stock` | JSON `{quantity, storage_location_path?}` → adds stock to an existing part (its lot in that location, or a new lot: `new_lot: true`) |
 | `POST /api/parts/{id}/label` | prints the QR label; optional JSON `{title, subtitle, copies}` |
 | `GET /api/parts/{id}/label.png` | label preview |
+| `GET /api/bins/suggest?category=…&category=…&bagged=true` | where a new part goes: drawer(s) from the category, the bin being filled (or first empty one), the empty bins |
 | `GET /api/storage-locations` | all storage locations (id, name, full path) |
 | `POST /api/storage-locations` | JSON `{path}`, e.g. `["Helmer", "D2", "D2-A1"]` → the location, created with missing parents if needed |
 | `POST /api/storage-locations/{id}/label` | prints a bin label (QR to the parts in it + bin name); optional JSON as for parts |

@@ -8,6 +8,8 @@ import {
   printLabel,
   printLocationLabel,
   storageLocations,
+  suggestBin,
+  type BinSuggestion,
   type CreatedPart,
   type IdentifiedItem,
   type IdentifyResult,
@@ -36,7 +38,12 @@ interface Done {
   label: "show" | "offer";
   /** Bin name for the label's second line, e.g. "D2-A1". */
   bin?: string;
+  /** The part went into an empty bin: offer that bin's label too. */
+  newBin?: { id: number; name: string };
 }
+
+const newBinOf = (r: { new_bin: boolean; location_id: number | null; location: string | null }) =>
+  r.new_bin && r.location_id != null && r.location ? { id: r.location_id, name: r.location } : undefined;
 
 const PATH_SEPARATOR = " › ";
 const splitPath = (s: string) => s.split(/\s*[›>/→]\s*/).map((p) => p.trim()).filter(Boolean);
@@ -72,8 +79,20 @@ export default function App() {
           item={screen.result.items[screen.index].item}
           photos={photos}
           onBack={() => setScreen({ kind: "result", result: screen.result })}
-          onSaved={(part: CreatedPart) =>
-            setScreen({ kind: "saved", result: screen.result, done: { id: part.id, url: part.url, message: `Saved ${part.name}`, label: "show" } })}
+          onSaved={(part: CreatedPart, bagged: boolean) =>
+            setScreen({
+              kind: "saved",
+              result: screen.result,
+              done: {
+                id: part.id,
+                url: part.url,
+                message: `Saved ${part.name}${part.location ? ` in ${part.location}` : ""}`,
+                // A bagged part gets a label for its bag; a loose part in a D1 compartment has nothing to stick it on.
+                label: bagged ? "show" : "offer",
+                bin: part.location ?? undefined,
+                newBin: newBinOf(part),
+              },
+            })}
         />
       )}
       {screen.kind === "restock" && (
@@ -189,15 +208,12 @@ function Result(props: {
             {item.category_path.join(PATH_SEPARATOR)}
             {item.quantity_estimate ? ` · ${item.quantity_estimate} pcs` : ""} · {Math.round(item.confidence * 100)}% sure
           </p>
-          {in_stock.length > 0 ? (
+          {in_stock.some((m) => m.same) ? (
             <div className="stock yes">
               <strong>Already in stock</strong>
-              {in_stock.map((m) => (
+              {in_stock.filter((m) => m.same).map((m) => (
                 <div key={m.id} className="match">
-                  <span>
-                    <a href={m.url} target="_blank" rel="noreferrer">{m.name}</a>: {m.total_amount} pcs
-                    {m.locations.length > 0 && <> in {m.locations.join(", ")}</>}
-                  </span>
+                  <MatchText m={m} />
                   <button className="primary small" onClick={() => onRestock(i, m)}>+ Add to stock</button>
                 </div>
               ))}
@@ -205,8 +221,19 @@ function Result(props: {
           ) : (
             <div className="stock no">Not in stock yet</div>
           )}
+          {in_stock.some((m) => !m.same) && (
+            <div className="stock similar">
+              <strong>Similar parts you have</strong>
+              {in_stock.filter((m) => !m.same).map((m) => (
+                <div key={m.id} className="match">
+                  <MatchText m={m} />
+                  <button className="link small" onClick={() => onRestock(i, m)}>Same part? Add to stock</button>
+                </div>
+              ))}
+            </div>
+          )}
           {item.notes && <p className="note">{item.notes}</p>}
-          {in_stock.length ? (
+          {in_stock.some((m) => m.same) ? (
             <button className="link" onClick={() => onAdd(i)}>It's a different part: add as new</button>
           ) : (
             <button className="primary" onClick={() => onAdd(i)}>Add to inventory</button>
@@ -219,9 +246,23 @@ function Result(props: {
   );
 }
 
+function MatchText({ m }: { m: StockMatch }) {
+  return (
+    <span>
+      <a href={m.url} target="_blank" rel="noreferrer">{m.name}</a>: {m.total_amount} pcs
+      {m.locations.length > 0 && <> in {m.locations.join(", ")}</>}
+    </span>
+  );
+}
+
 // ------------------------------------------------------------------ 3. review
 
-function Review(props: { item: IdentifiedItem; photos: Blob[]; onBack: () => void; onSaved: (p: CreatedPart) => void }) {
+function Review(props: {
+  item: IdentifiedItem;
+  photos: Blob[];
+  onBack: () => void;
+  onSaved: (p: CreatedPart, bagged: boolean) => void;
+}) {
   const { item, photos, onBack, onSaved } = props;
   const [name, setName] = useState(item.name);
   const [mpn, setMpn] = useState(item.mpn ?? "");
@@ -229,7 +270,10 @@ function Review(props: { item: IdentifiedItem; photos: Blob[]; onBack: () => voi
   const [pkg, setPkg] = useState(item.package ?? "");
   const [category, setCategory] = useState(item.category_path.join(PATH_SEPARATOR));
   const [quantity, setQuantity] = useState(item.quantity_estimate?.toString() ?? "");
-  const [location, setLocation] = useState(() => localStorageGet("lastLocation") ?? "");
+  const [bagged, setBagged] = useState(true);
+  const [suggestion, setSuggestion] = useState<BinSuggestion | null>(null);
+  const [location, setLocation] = useState("");
+  const [locationEdited, setLocationEdited] = useState(false);
   const [notes, setNotes] = useState(item.notes ?? "");
   const [locations, setLocations] = useState<StorageLocation[]>([]);
   const [busy, setBusy] = useState(false);
@@ -238,6 +282,34 @@ function Review(props: { item: IdentifiedItem; photos: Blob[]; onBack: () => voi
   useEffect(() => {
     storageLocations().then(setLocations).catch(() => {});
   }, []);
+
+  // Suggest a bin for the category (debounced while the category is typed); a bin the user chose stays.
+  useEffect(() => {
+    let cancelled = false;
+    const t = setTimeout(() => {
+      suggestBin(splitPath(category), bagged)
+        .then((s) => {
+          if (cancelled) return;
+          setSuggestion(s);
+          if (!locationEdited) setLocation(s.bin ?? "");
+        })
+        .catch(() => !cancelled && setSuggestion(null));
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [category, bagged, locationEdited]);
+
+  const chooseLocation = (value: string) => {
+    setLocation(value);
+    setLocationEdited(true);
+  };
+
+  // "Bin full": the next empty bin after the current one (or the first); it becomes the bin being filled.
+  const nextBin = () => {
+    const empty = suggestion?.empty_bins ?? [];
+    const current = empty.findIndex((b) => b.toLowerCase() === location.trim().toLowerCase());
+    const next = empty[current + 1] ?? empty.find((_, i) => i !== current);
+    if (next) chooseLocation(next);
+  };
 
   const save = async () => {
     setBusy(true);
@@ -258,8 +330,7 @@ function Review(props: { item: IdentifiedItem; photos: Blob[]; onBack: () => voi
         },
         photos,
       );
-      if (location.trim()) localStorageSet("lastLocation", location.trim());
-      onSaved(part);
+      onSaved(part, bagged);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -285,11 +356,30 @@ function Review(props: { item: IdentifiedItem; photos: Blob[]; onBack: () => voi
         </label>
         <label>Storage location
           <input value={location} list="locations" placeholder="e.g. D2-A1 or W-INBOX"
-            onChange={(e) => setLocation(e.target.value)} />
+            onChange={(e) => chooseLocation(e.target.value)} />
           <datalist id="locations">
             {locations.map((l) => <option key={l.path} value={l.name} label={l.path} />)}
           </datalist>
         </label>
+      </div>
+      <div className="segmented" role="group" aria-label="Packaging">
+        <button className={bagged ? "on" : ""} onClick={() => setBagged(true)}>In a bag</button>
+        <button className={bagged ? "" : "on"} onClick={() => setBagged(false)}>Loose</button>
+      </div>
+      {suggestion && (
+        <p className="muted">
+          {suggestion.reason}.{" "}
+          {suggestion.bin
+            ? <>Suggested: <strong>{suggestion.bin}</strong> ({suggestion.filling ? "the bin being filled" : "empty bin"}).</>
+            : <>No empty bin left in {suggestion.drawers.join("/")}.</>}
+        </p>
+      )}
+      <div className="row">
+        <button className="small" onClick={nextBin} disabled={!suggestion?.empty_bins.length}>Bin full → next bin</button>
+        <button className="small" onClick={() => chooseLocation("W-INBOX")}>Inbox, sort later</button>
+        {locationEdited && suggestion?.bin && (
+          <button className="small" onClick={() => { setLocationEdited(false); setLocation(suggestion.bin ?? ""); }}>Suggested</button>
+        )}
       </div>
       {item.key_parameters.length > 0 && (
         <p className="muted">
@@ -332,6 +422,7 @@ function Restock(props: {
         message: `Added ${r.added} to ${r.name}${where}, now ${r.total_amount} pcs`,
         label: r.new_lot ? "show" : "offer",
         bin: r.location ?? undefined,
+        newBin: newBinOf(r),
       });
     } catch (e) {
       setError((e as Error).message);
@@ -406,12 +497,39 @@ function Saved(props: { done: Done; hasMoreItems: boolean; onBack: () => void; o
           {error && <p className="error">{error}</p>}
         </>
       ) : (
-        <button className="link" onClick={() => setShowLabel(true)}>Print a label anyway (e.g. moving to a new bin)</button>
+        <button className="link" onClick={() => setShowLabel(true)}>Print a part label anyway</button>
       )}
+      {done.newBin && <NewBinLabel bin={done.newBin} />}
       <a className="button secondary" href={done.url} target="_blank" rel="noreferrer">Open in Part-DB</a>
       {hasMoreItems && <button className="secondary" onClick={onBack}>Back to the other parts</button>}
       <button className="secondary" onClick={onRestart}>Next part</button>
     </section>
+  );
+}
+
+function NewBinLabel({ bin }: { bin: { id: number; name: string } }) {
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const print = async () => {
+    setState("busy");
+    setError(null);
+    try {
+      await printLocationLabel(bin.id);
+      setState("done");
+    } catch (e) {
+      setError((e as Error).message);
+      setState("idle");
+    }
+  };
+  return (
+    <div className="card">
+      <strong>{bin.name} is a new bin</strong>
+      <img className="label" src={locationLabelPreviewUrl(bin.id)} alt={`Label for ${bin.name}`} />
+      <button onClick={print} disabled={state === "busy"}>
+        {state === "busy" ? "Printing…" : state === "done" ? "Printed ✓ Print again" : "🏷 Print bin label"}
+      </button>
+      {error && <p className="error">{error}</p>}
+    </div>
   );
 }
 
@@ -489,12 +607,4 @@ function Bins(props: { onBack: () => void }) {
       <button className="secondary" onClick={props.onBack}>Back to capture</button>
     </section>
   );
-}
-
-// localStorage can be unavailable (private mode); remembering the last location is only a convenience.
-function localStorageGet(key: string): string | null {
-  try { return localStorage.getItem(key); } catch { return null; }
-}
-function localStorageSet(key: string, value: string) {
-  try { localStorage.setItem(key, value); } catch { /* ignore */ }
 }
