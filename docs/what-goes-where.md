@@ -2,7 +2,7 @@
 
 How parts are sorted into the IKEA Helmer and the Multiboard wall. Use this when choosing a storage location for a part, in code (e.g. suggesting a bin in the capture app) or by hand.
 
-Layout and print details: [storage.md](storage.md). Machine-readable source of truth: `storage/plan.json` (if this file and the plan disagree, the plan wins; update this file).
+Drawings of every drawer with all bin names: [drawer-layouts.md](drawer-layouts.md). Layout and print details: [storage.md](storage.md). Machine-readable source of truth: `storage/plan.json` (if this file and the plan disagree, the plan wins; update this file).
 
 ## The basics
 

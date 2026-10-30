@@ -27,7 +27,7 @@ Whatever sticks out of a bin counts too: a bag standing upright on the bin floor
 
 Bins that should also work on the wall stay at 9u or lower.
 
-Which parts go into which drawer: **[what-goes-where.md](what-goes-where.md)**.
+Which parts go into which drawer: **[what-goes-where.md](what-goes-where.md)**. Drawings of every drawer with bin names: **[drawer-layouts.md](drawer-layouts.md)** (`python3 storage/generate.py --layouts` regenerates it after a plan change).
 
 ## Naming
 
