@@ -19,6 +19,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Networking:** Tailscale everywhere. Host has Tailscale SSH; each service has its own Tailscale sidecar (`parts.<tailnet>.ts.net`). The Azure NSG has no inbound rules.
 - **Labels:** Brother P-touch P700 on a Raspberry Pi 3 at home (`homelab`), driven by `ptouch-print`; a small FastAPI print server (`print-server/`) in its own compose stack on the Pi (`~/apps/shelfie-print`), with a Tailscale sidecar at `labels.<tailnet>.ts.net`.
 - **Storage:** IKEA Helmer, 6 drawers (D1 top → D6 bottom), inside 230×390×85 mm (re-measured 2026-10-29) → Gridfinity 5×9 grid per drawer (5×5 + 5×4 baseplates; 9.5 mm side padding and 11 mm back padding on the rear piece, each leaving 1 mm clearance), max bin 9u, no 1×1 bins. Bin = Part-DB storage location `Helmer › D2 › D2-A1`, named after its front-left cell. Plus a 35×35 cm Multiboard wall area for `W-INBOX` (new parcels) and `W-PROJECT`; plan in `docs/storage.md`; `storage/plan.json` is the machine-readable source, `storage/generate.py` validates it (`--check`, no CAD) and renders STLs via cqgridfinity (`uv run`; padded baseplates are built in the script, the library has no padding option). Bambu Studio process preset for the A1 in `storage/bambu/` (based on 0.28mm Extra Draft @BBL A1; keys checked against Bambu Studio's PrintConfig.cpp, import untested).
+- **What goes where:** sorting rules for parts (drawer contents, decision steps, category → drawer defaults) in `docs/what-goes-where.md`; read it before suggesting or choosing a storage location. Imported below.
 - **Backups:** `scripts/backup.sh` (SQLite `.backup` + uploads) → rsync over Tailscale to a Synology DS218+.
 
 ## Decisions and why
@@ -69,3 +70,7 @@ Tailscale prep is done (MagicDNS, HTTPS certificates, two pre-approved one-time 
 - **Terraform:** azurerm `~> 5.11` (v5: `resource_provider_registrations = "legacy"` is set on purpose for the fresh subscription).
 - **Stack:** .NET for the backend, React for the frontend, Python for small tools on the Pi and the vision CLI (`uv run`, PEP 723 inline deps).
 - Prefer small, working increments; each roadmap step should be usable on its own.
+
+## What goes where
+
+@docs/what-goes-where.md

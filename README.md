@@ -105,7 +105,7 @@ shelfie-parts/
 ├── vision/         # vision prompt, JSON schema, identify.py test CLI
 ├── storage/        # plan.json (drawers and bins), generate.py (Gridfinity STLs), plates.py (A1 plates as 3MF), bambu/ (A1 print preset)
 ├── scripts/        # backup.sh
-└── docs/           # getting-started.md, storage.md (Gridfinity bins in an IKEA Helmer)
+└── docs/           # getting-started.md, storage.md (Gridfinity bins in an IKEA Helmer), what-goes-where.md
 ```
 
 **→ Setup: [docs/getting-started.md](docs/getting-started.md)**

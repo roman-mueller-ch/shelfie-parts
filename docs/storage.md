@@ -27,6 +27,8 @@ Whatever sticks out of a bin counts too: a bag standing upright on the bin floor
 
 Bins that should also work on the wall stay at 9u or lower.
 
+Which parts go into which drawer: **[what-goes-where.md](what-goes-where.md)**.
+
 ## Naming
 
 - **Columns A–E** from left to right, **rows 1–9** from front to back.
