@@ -211,7 +211,7 @@ Ready-made shelves: [Multiboard Gridfinity Shelf](https://www.printables.com/mod
 
 - Each drawer front has a 45 × 25 mm 3D-printed label in the label holder, stuck on with double-sided tape: a 1.2 mm plate in the drawer's colour with the drawer name (`D1`) raised 0.6 mm in black, Space Grotesk Bold.
 - `uv run storage/drawer_labels.py D1` (or no argument for all six) writes `storage/out/labels/D1-label.3mf` (one object, parts *plate* and *text*) plus both parts as STL. Pure Python with fontTools; the font is in `storage/fonts/` (SIL OFL).
-- **Printing:** 0.2 mm layers. With an AMS, give the *text* part black. Without, add a pause / filament change at layer 7 (z = 1.2 mm) in Bambu Studio and swap to black.
+- **Printing:** process preset `storage/bambu/shelfie-labels-a1.json` ("0.20mm Shelfie Labels @BBL A1": 0.2 mm layers so plate and text end on whole layers, solid plate, ironing on all top surfaces, slow outer walls, no prime tower). Give the *text* part black in the Objects tab; without an AMS, add a filament change at layer 7 (z = 1.2 mm) instead.
 
 ## Part-DB locations
 

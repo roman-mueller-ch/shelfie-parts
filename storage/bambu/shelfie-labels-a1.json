@@ -1,0 +1,34 @@
+{
+    "type": "process",
+    "from": "User",
+    "inherits": "0.20mm Standard @BBL A1",
+    "name": "0.20mm Shelfie Labels @BBL A1",
+    "print_settings_id": "0.20mm Shelfie Labels @BBL A1",
+    "is_custom_defined": "0",
+    "version": "2.8.0.9",
+    "wall_loops": "2",
+    "wall_generator": "arachne",
+    "top_shell_layers": "6",
+    "top_shell_thickness": "0",
+    "bottom_shell_layers": "4",
+    "bottom_shell_thickness": "0",
+    "top_surface_pattern": "monotonicline",
+    "ironing_type": "top",
+    "ironing_flow": "10%",
+    "ironing_spacing": "0.15",
+    "ironing_speed": "30",
+    "outer_wall_speed": [
+        "60"
+    ],
+    "inner_wall_speed": [
+        "100"
+    ],
+    "top_surface_speed": [
+        "80"
+    ],
+    "enable_prime_tower": "0",
+    "enable_support": "0",
+    "compatible_printers": [
+        "Bambu Lab A1 0.4 nozzle"
+    ]
+}
