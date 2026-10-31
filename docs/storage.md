@@ -207,6 +207,12 @@ Ready-made shelves: [Multiboard Gridfinity Shelf](https://www.printables.com/mod
 - Keep QR contents short. On 9 mm tape a QR module is a single dot; a ~45-character Part-DB URL scanned fine in testing.
 - **Printing:** in the capture app, *Bin labels* (top right). Filter by drawer (`D2`) and print one bin or all shown. D1's compartments are hidden unless you tick *Show compartments*.
 
+### Drawer labels
+
+- Each drawer front has a 45 × 25 mm 3D-printed label in the label holder, stuck on with double-sided tape: a 1.2 mm plate in the drawer's colour with the drawer name (`D1`) raised 0.6 mm in black, Space Grotesk Bold.
+- `uv run storage/drawer_labels.py D1` (or no argument for all six) writes `storage/out/labels/D1-label.3mf` (one object, parts *plate* and *text*) plus both parts as STL. Pure Python with fontTools; the font is in `storage/fonts/` (SIL OFL).
+- **Printing:** 0.2 mm layers. With an AMS, give the *text* part black. Without, add a pause / filament change at layer 7 (z = 1.2 mm) in Bambu Studio and swap to black.
+
 ## Part-DB locations
 
 The location tree comes from the plan: `storage/sync_locations.py` creates every drawer, bin, compartment and wall location that Part-DB doesn't have yet, through the capture API. Run it again after changing `plan.json`; it never deletes or renames, so remove or rename retired bins in Part-DB by hand.
