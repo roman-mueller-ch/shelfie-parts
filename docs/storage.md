@@ -18,12 +18,20 @@ Gridfinity bins are 7 mm per height unit (u), plus about 4.4 mm for the stacking
 | Bin height | Bin incl. lip | + baseplate | Clearance in 85 mm |
 |---|---|---|---|
 | 3u | 25 mm | ~30 mm | 55 mm |
-| 6u | 46 mm | ~51 mm | 34 mm |
-| 9u | 67 mm | ~72 mm | 13 mm, **tallest recommended** |
+| 4u | 32 mm | ~37 mm | 48 mm |
+| 6u | 46 mm | ~51 mm | 34 mm, **tallest in normal use** |
+| 9u | 67 mm | ~72 mm | 13 mm, only D6 (bulky, rarely used) |
 | 10u | 74 mm | ~79 mm | 6 mm, only if the test print shows the drawer closes reliably |
 | 11u | 81 mm | ~86 mm | ❌ doesn't fit |
 
-Whatever sticks out of a bin counts too: a bag standing upright on the bin floor must be **at most 7 cm tall** (about 10 mm of baseplate and bin floor plus 70 mm stays under 85 mm). In a 9u bin such a bag sticks out a little above the rim, which makes it easy to grab.
+Whatever sticks out of a bin counts too: a bag standing upright on the bin floor must be **at most 7 cm tall** (about 10 mm of baseplate and bin floor plus 70 mm stays under 85 mm). Fold bags once so they stand in a 6u bin.
+
+**Reach:** a Helmer drawer opens only far enough to reach **rows 1–6**; rows 7–9 stay partly under the drawer above. Tall bins there are hard to see into and can't be tilted out, so (decided 2026-11-02, after printing the D6 bins):
+
+- **6u is the maximum** in rows 1–6 (D1 stays at 3u).
+- **Rows 7–9 get 4u bins** for spares, overflow and rarely used parts. You see over the front bins into them, and they tilt out with the drawer partly open.
+- **D6 keeps 9u** throughout: cables and tools need the height and are rarely used.
+- **Exception, D2 rows 1–6:** the four 2×3 bins there (`D2-A1`, `C1`, `A4`, `C4`) were already printed at 9u in blue and are kept. They're within reach, and bags stand in them without folding.
 
 Bins that should also work on the wall stay at 9u or lower.
 
@@ -45,21 +53,21 @@ A starting allocation. Swap drawers around as the collection grows; the layouts 
 | Drawer | Contents | Bins |
 |---|---|---|
 | D1 | Small loose parts: ICs, crystals, LEDs, buttons | 6 × 2×3 3u (6 compartments), 3 × 1×3 3u (3 compartments) |
-| D2 | Bagged parts | 6 × 2×3 9u, 3 × 1×3 9u |
-| D3 | Bagged parts | 6 × 2×3 9u, 3 × 1×3 9u |
-| D4 | Modules and sensors | 8 × 2×2 6u, 3 × 1×3 6u, 2 × 2×1 6u |
-| D5 | Dev boards and displays | 6 × 2×3 6u, 3 × 1×3 6u |
+| D2 | Bagged parts | rows 1–6: 4 × 2×3 9u (printed before the change), 2 × 1×3 6u; rows 7–9: 2 × 2×3 4u, 1 × 1×3 4u |
+| D3 | Bagged parts | rows 1–6: 4 × 2×3 6u, 2 × 1×3 6u; rows 7–9: 2 × 2×3 4u, 1 × 1×3 4u |
+| D4 | Modules and sensors | rows 1–6: 6 × 2×2 6u, 2 × 1×3 6u; rows 7–9: 2 × 2×2 4u, 2 × 2×1 4u, 1 × 1×3 4u |
+| D5 | Dev boards and displays | rows 1–6: 4 × 2×3 6u, 2 × 1×3 6u; rows 7–9: 2 × 2×3 4u, 1 × 1×3 4u |
 | D6 | Cables, wire, tools | 3 × 3×3 9u, 3 × 2×3 9u |
 
 **No 1×1 bins.** The smallest bins are 2×1 and 1×3. Small loose parts go into compartments of larger bins instead: D1 offers 45 compartments, the same as 45 single bins, but only 9 bins to print and handle. Use 1×1 bins only for something that really needs its own box.
 
-Most AliExpress stock arrives in small zip bags, so two drawers are reserved for them. Keep parts in their bags and stand the bags upright in the 2×3 bins like index cards, front to back. One 2×3 bin holds roughly 15–25 bags.
+Most AliExpress stock arrives in small zip bags, so two drawers are reserved for them. Keep parts in their bags, fold each bag once and stand it upright in the 2×3 bins like an index card, front to back. One 2×3 bin holds roughly 15–25 bags.
 
 ### Layouts
 
 Front of the drawer at the bottom of each grid.
 
-**D1, D2, D3 and D5** share one layout. D1 uses it at 3u with compartments (six per 2×3 bin, three per 1×3 bin), D2 and D3 at 9u for bags, D5 at 6u for dev boards.
+**D1, D2, D3 and D5** share one layout. D1 uses it at 3u with compartments (six per 2×3 bin, three per 1×3 bin), D2, D3 and D5 at 6u (bags, dev boards), with 4u bins in rows 7–9.
 ```
 row 7–9 │  A7 (2×3)  │  C7 (2×3)  │ E7 (1×3) │
 row 4–6 │  A4 (2×3)  │  C4 (2×3)  │ E4 (1×3) │
@@ -114,12 +122,14 @@ Both fit the A1's 256 × 256 mm bed. Magnets aren't needed; bins in a drawer don
 |---|---|---|---|
 | 2×3, 6 compartments | 3u | 6 | D1 |
 | 1×3, 3 compartments | 3u | 3 | D1 |
-| 2×1 | 6u | 2 | D4 |
-| 2×2 | 6u | 8 | D4 |
-| 1×3 | 6u | 6 | D4, D5 |
-| 2×3 | 6u | 6 | D5 |
-| 2×3 | 9u | 15 | D2, D3, D6 |
-| 1×3 | 9u | 6 | D2, D3 |
+| 2×1 | 4u | 2 | D4 (back) |
+| 2×2 | 4u | 2 | D4 (back) |
+| 1×3 | 4u | 4 | D2–D5 (back) |
+| 2×3 | 4u | 6 | D2, D3, D5 (back) |
+| 2×2 | 6u | 6 | D4 |
+| 1×3 | 6u | 8 | D2–D5 |
+| 2×3 | 6u | 8 | D3, D5 |
+| 2×3 | 9u | 7 | D2 (front), D6 |
 | 3×3 | 9u | 3 | D6 |
 
 55 bins in total for all six drawers.

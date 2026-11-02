@@ -10,16 +10,17 @@ Drawings of every drawer with all bin names: [drawer-layouts.md](drawer-layouts.
 - **A bin is named after its front-left cell:** `D2-A4` = drawer 2, cell A4. In Part-DB: `Helmer › D2 › D2-A4`. D1's compartments add a suffix: `D1-A1.1` to `D1-A1.6`, left to right, then front to back.
 - **Names are positions, not contents.** When a bin's contents change, only Part-DB changes; the label stays.
 - **Rule of thumb:** heavy and rarely used at the bottom, small and frequent at the top.
+- **Front and back:** a drawer opens far enough to reach **rows 1–6**. Rows 7–9 have lower (4u) bins for spares, overflow and rarely used parts; fill the front first.
 
 ## Drawers
 
 | Drawer | Contents | Bins | Colour |
 |---|---|---|---|
 | **D1** | **Small loose parts**: bare ICs, crystals, LEDs, buttons, transistors, diodes, small passives | 6 × 2×3 (6 compartments) + 3 × 1×3 (3 compartments), 3u: 45 compartments | white |
-| **D2** | **Bagged parts**: AliExpress zip bags standing upright like index cards | 6 × 2×3 + 3 × 1×3, 9u | blue |
-| **D3** | **More bagged parts**: overflow from D2 | same as D2 | blue |
-| **D4** | **Modules and sensors**: breakout boards (BME280, TP4056, HX711, relay and motor driver boards) | 8 × 2×2 + 2 × 2×1 + 3 × 1×3, 6u | green |
-| **D5** | **Dev boards and displays**: ESP32, Pi Pico, Arduino, OLED/TFT displays | 6 × 2×3 + 3 × 1×3, 6u | green |
+| **D2** | **Bagged parts**: AliExpress zip bags, folded once, standing upright like index cards | 6 × 2×3 + 3 × 1×3, 6u (4u in rows 7–9; D2's four front 2×3 bins are 9u) | blue |
+| **D3** | **More bagged parts**: overflow from D2 | 6 × 2×3 + 3 × 1×3, 6u (4u in rows 7–9) | blue |
+| **D4** | **Modules and sensors**: breakout boards (BME280, TP4056, HX711, relay and motor driver boards) | 8 × 2×2 + 2 × 2×1 + 3 × 1×3, 6u (4u in rows 7–9) | green |
+| **D5** | **Dev boards and displays**: ESP32, Pi Pico, Arduino, OLED/TFT displays | 6 × 2×3 + 3 × 1×3, 6u (4u in rows 7–9) | green |
 | **D6** | **Bulky items**: cables, jumper wires, wire spools, power supplies, tools | 3 × 3×3 + 3 × 2×3, 9u | grey |
 
 ## Wall (Multiboard, next to the desk)
@@ -32,7 +33,7 @@ Drawings of every drawer with all bin names: [drawer-layouts.md](drawer-layouts.
 1. **Still in its bag?** → D2, then D3 when D2 is full. Most AliExpress orders; the bag keeps parts and their label together.
 2. **Loose and tiny?** → a D1 compartment.
 3. **A board with pins?** → D4 for a module or sensor, D5 for a dev board or display.
-4. **Too big for a 9u bin (about 7 cm standing), a cable or a tool?** → D6.
+4. **Too big for a 6u bin (bags folded, about 7 cm max standing), a cable or a tool?** → D6.
 5. **No time to sort?** → `W-INBOX`.
 
 Within a drawer, keep similar parts together (e.g. in D4: sensors front left, power modules front right, motor drivers at the back). Exact positions don't matter; the app shows which bin a part is in.
@@ -57,13 +58,14 @@ The capture API's vision model returns one of the fixed `category_path` values f
 The capture API implements this table in `capture-api/PartDb/BinSuggestion.cs` (`DrawerRules`); change both together.
 
 - The review screen has an **In a bag / Loose** switch (default: in a bag). It only matters for parts that aren't modules, dev boards or D6 items.
-- **Suggested bin:** the bin being filled in that drawer (the one that got the newest stock), else the first empty bin in plan order. D1 compartments hold one part type each, so loose parts always get the next empty compartment.
+- **Suggested bin:** the bin being filled in that drawer (the one that got the newest stock), else the first empty bin in rows 1–6, then rows 7–9 (plan order within each). D1 compartments hold one part type each, so loose parts always get the next empty compartment.
 - **Bin full → next bin** picks the next empty bin; from then on it is the bin being filled. **Inbox, sort later** sets `W-INBOX`. Any bin name can be typed too.
 - **Labels:** a bagged part gets its part label (for the bag); a loose part only on request. When a part goes into an empty bin, the app offers that bin's label as well.
 - **Same or similar:** a part counts as already in stock only if every word of the model's most specific search term (e.g. `ESP32-S3 N16R8`) is in its name or MPN, or the MPNs are equal. Related parts (an ESP32-C3 when you scan an S3) are listed as *similar*, without the restock button.
 
-## Status (2026-10-30)
+## Status (2026-11-02)
 
-- Baseplates printed; first 2×3×9u bin printed in white and listed as `D2-A1` under `printed` in `plan.json` (D2 is planned in blue).
-- 57 bins left; `storage/plates.py` packs them onto 14 A1 plates.
+- Baseplates printed; the six grey D6 bins (9u) printed and listed under `printed` in `plan.json`.
+- Heights lowered 2026-11-02: 6u max, 4u in rows 7–9 (D6 stays 9u; D2's four front 2×3 bins were already printed at 9u in blue and kept). The white 2×3×9u test bin is no longer part of the plan (spare).
+- 48 bins left; `storage/plates.py` packs them onto 10 A1 plates.
 - All 109 locations exist in Part-DB (`storage/sync_locations.py`); capturing into D2 can start.
