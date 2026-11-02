@@ -205,6 +205,15 @@ public sealed class PartDbClient
             locationIri is null ? null : int.Parse(locationIri["/api/storage_locations/".Length..]), newBin);
     }
 
+    /// <summary>Rows 7–9 are behind what an opened drawer reaches: "D4-A7" → true, "D1-A1.3" → false.</summary>
+    internal static bool IsBackRow(string binName)
+    {
+        var m = Regex.Match(binName, @"-[A-Za-z](\d+)");
+        return m.Success && int.Parse(m.Groups[1].Value) >= BackRow;
+    }
+
+    private const int BackRow = 7;
+
     // Embedded in a part, a lot's storage_location is an object; from /api/part_lots it can be an IRI.
     private static string? LocationIri(JsonElement lot) =>
         !lot.TryGetProperty("storage_location", out var s) ? null : s.ValueKind switch
@@ -223,7 +232,9 @@ public sealed class PartDbClient
 
     /// <summary>
     /// Where a new part should go (see <see cref="BinSuggestion"/>). Bins are the leaves under the drawers
-    /// (in D1 the compartments), in plan order: storage/sync_locations.py creates them in that order.
+    /// (in D1 the compartments): front rows of all the rule's drawers first (an open drawer only reaches
+    /// rows 1–6, so D3's front comes before D2's back), then by drawer and plan order, which is creation
+    /// order because storage/sync_locations.py creates them that way.
     /// </summary>
     public async Task<BinSuggestion> SuggestBinAsync(IReadOnlyList<string> categoryPath, bool bagged, CancellationToken ct)
     {
@@ -233,7 +244,7 @@ public sealed class PartDbClient
             rule.Drawers.ToList().FindIndex(d => l.Path.StartsWith($"Helmer / {d} / ", StringComparison.OrdinalIgnoreCase));
         var bins = all
             .Where(l => DrawerIndex(l) >= 0 && !all.Any(c => c.Path.StartsWith(l.Path + " / ", StringComparison.Ordinal)))
-            .OrderBy(DrawerIndex).ThenBy(l => l.Id).ToList();
+            .OrderBy(l => IsBackRow(l.Name)).ThenBy(DrawerIndex).ThenBy(l => l.Id).ToList();
         var iri = bins.ToDictionary(b => b, b => $"/api/storage_locations/{b.Id}");
 
         var lots = await LotLocationsAsync(ct);

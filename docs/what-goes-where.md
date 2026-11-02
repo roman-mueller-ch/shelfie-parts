@@ -58,7 +58,7 @@ The capture API's vision model returns one of the fixed `category_path` values f
 The capture API implements this table in `capture-api/PartDb/BinSuggestion.cs` (`DrawerRules`); change both together.
 
 - The review screen has an **In a bag / Loose** switch (default: in a bag). It only matters for parts that aren't modules, dev boards or D6 items.
-- **Suggested bin:** the bin being filled in that drawer (the one that got the newest stock), else the first empty bin in rows 1–6, then rows 7–9 (plan order within each). D1 compartments hold one part type each, so loose parts always get the next empty compartment.
+- **Suggested bin:** the bin being filled in that drawer (the one that got the newest stock), else the first empty bin in rows 1–6, then rows 7–9 (plan order within each). For bagged parts that means D2's and D3's front rows before either back. D1 compartments hold one part type each, so loose parts always get the next empty compartment.
 - **Bin full → next bin** picks the next empty bin; from then on it is the bin being filled. **Inbox, sort later** sets `W-INBOX`. Any bin name can be typed too.
 - **Labels:** a bagged part gets its part label (for the bag); a loose part only on request. When a part goes into an empty bin, the app offers that bin's label as well.
 - **Same or similar:** a part counts as already in stock only if every word of the model's most specific search term (e.g. `ESP32-S3 N16R8`) is in its name or MPN, or the MPNs are equal. Related parts (an ESP32-C3 when you scan an S3) are listed as *similar*, without the restock button.
