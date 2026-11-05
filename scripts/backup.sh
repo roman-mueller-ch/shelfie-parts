@@ -34,9 +34,10 @@ echo "$(date -Is) backup written to $OUT"
 # 3. Keep the newest N local backups.
 ls -1dt "$OUT_ROOT"/*/ | tail -n +"$((KEEP_LOCAL + 1))" | xargs -r rm -rf
 
-# 4. Ship off-host.
+# 4. Ship off-host. No --delete: the Synology keeps more than the VM and applies its own
+#    retention (10 newest + one per week for 6 months, prune-backups.sh in DSM Task Scheduler).
 if [[ -n "$TARGET" ]]; then
-  rsync -a --delete "$OUT_ROOT/" "$TARGET/"
+  rsync -a "$OUT_ROOT/" "$TARGET/"
   echo "$(date -Is) synced to $TARGET"
 else
   echo "$(date -Is) no rsync target set; backup kept locally only" >&2

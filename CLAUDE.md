@@ -29,6 +29,7 @@ See `README.md` for architecture and `docs/getting-started.md` for setup.
 - **Not on the Synology:** Docker on the DS218+ (2 GB RAM, runs Plex) performed badly before.
 - **Not on the Pi 5:** it runs Umbrel with a Bitcoin node; don't mix.
 - **Visual Studio credits** are licensed for dev/test, have a spending limit (subscription suspends when exhausted) and end if Roman's job changes. Hence: off-Azure backups, no Marketplace or third-party-billed services (Claude via Foundry would not be covered), keep it movable.
+- **Backup retention lives on the Synology,** not in `backup.sh`: the script's rsync has no `--delete`, and a DSM scheduled task keeps the 10 newest plus the newest of each week for 6 months, the same rule as the homelab's backups. Re-adding `--delete` would wipe the weekly copies.
 - **Part-DB base currency:** CHF (cannot change after first prices).
 - **Print server in Docker, not systemd:** `sudo` on the Pi needs a password, and Docker keeps it like the VM stack (sidecar, no LAN exposure). The container runs as root to open the USB printer without a host udev rule.
 - **Capture API sends photos as uploaded** (JPEG/PNG/WebP/GIF, sniffed by magic bytes), no server-side resizing: the model downscales itself (same token count), the PWA will resize/convert HEIC in the browser. ImageSharp 4 needs a paid license key for Release builds, SkiaSharp is an 87 MB download that failed over ProtonVPN.

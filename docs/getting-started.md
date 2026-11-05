@@ -98,6 +98,8 @@ crontab -e
 # 15 3 * * * SHELFIE_BACKUP_TARGET=roman@synology:/volume1/backup/shelfie /srv/shelfie/scripts/backup.sh >> /srv/shelfie/backup.log 2>&1
 ```
 
+The VM keeps the newest `SHELFIE_BACKUP_KEEP` backups (default 7). The rsync adds to the Synology without deleting there; the NAS prunes on its own schedule (10 newest plus one per week for 6 months), shared with the homelab backups.
+
 ## 6. Label printer (Raspberry Pi)
 
 The print server runs as its own small compose stack on the Pi the Brother P-touch is plugged into, with a Tailscale sidecar at `https://labels.<tailnet>.ts.net`.
