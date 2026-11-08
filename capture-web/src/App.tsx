@@ -546,6 +546,15 @@ function Bins(props: { onBack: () => void }) {
   const [printed, setPrinted] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Status per bin, shown right under its row: the list is long and the bottom is off screen.
+  const [rowStatus, setRowStatus] = useState<Record<number, { text: string; error: boolean }>>({});
+  const setRow = (id: number, status: { text: string; error: boolean } | null) =>
+    setRowStatus((s) => {
+      const next = { ...s };
+      if (status) next[id] = status;
+      else delete next[id];
+      return next;
+    });
 
   useEffect(() => {
     storageLocations().then(setLocations).catch((e) => setError((e as Error).message));
@@ -560,11 +569,14 @@ function Bins(props: { onBack: () => void }) {
     setError(null);
     for (const [i, l] of list.entries()) {
       setBusy(list.length > 1 ? `Printing ${i + 1} of ${list.length}…` : "Printing…");
+      setRow(l.id, { text: "Printing…", error: false });
       try {
         await printLocationLabel(l.id);
         setPrinted((p) => new Set(p).add(l.id));
+        setRow(l.id, null);
       } catch (e) {
         setError(`${l.name}: ${(e as Error).message}`);
+        setRow(l.id, { text: (e as Error).message, error: true });
         break;
       }
     }
@@ -595,6 +607,7 @@ function Bins(props: { onBack: () => void }) {
               {printed.has(l.id) && <span className="muted">✓</span>}
               <button className="small" disabled={busy !== null} onClick={() => print([l])}>🏷 Print</button>
             </div>
+            {rowStatus[l.id] && <p className={rowStatus[l.id].error ? "error" : "muted"}>{rowStatus[l.id].text}</p>}
             {selected === l.id && <img className="label" src={locationLabelPreviewUrl(l.id)} alt={`Label for ${l.name}`} />}
           </li>
         ))}

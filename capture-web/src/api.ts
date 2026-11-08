@@ -143,7 +143,14 @@ export async function storageLocations(): Promise<StorageLocation[]> {
 
 /** A bin's label: QR code to the parts in it, the bin name as text. */
 export async function printLocationLabel(id: number): Promise<void> {
-  await check(await fetch(`/api/storage-locations/${id}/label`, { method: "POST" }));
+  let response: Response;
+  try {
+    response = await fetch(`/api/storage-locations/${id}/label`, { method: "POST", signal: AbortSignal.timeout(45_000) });
+  } catch (e) {
+    if ((e as Error).name === "TimeoutError") throw new Error("No answer from the label printer after 45 s. Is the P700 switched on?");
+    throw new Error(`Can't reach Shelfie: ${(e as Error).message}`);
+  }
+  await check(response);
 }
 
 export const locationLabelPreviewUrl = (id: number) => `/api/storage-locations/${id}/label.png`;
