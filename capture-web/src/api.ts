@@ -145,7 +145,14 @@ export async function storageLocations(): Promise<StorageLocation[]> {
 export async function printLocationLabel(id: number): Promise<void> {
   let response: Response;
   try {
-    response = await fetch(`/api/storage-locations/${id}/label`, { method: "POST", signal: AbortSignal.timeout(45_000) });
+    // Send a JSON body even though it's empty: without a Content-Type the API's JSON endpoint
+    // doesn't match and the request falls through to the /api 404 ("Not found.").
+    response = await fetch(`/api/storage-locations/${id}/label`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+      signal: AbortSignal.timeout(45_000),
+    });
   } catch (e) {
     if ((e as Error).name === "TimeoutError") throw new Error("No answer from the label printer after 45 s. Is the P700 switched on?");
     throw new Error(`Can't reach Shelfie: ${(e as Error).message}`);
