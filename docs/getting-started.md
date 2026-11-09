@@ -163,6 +163,29 @@ For local development (`dotnet run` in `capture-api/`), the secrets go into `dot
 | `POST /api/storage-locations/{id}/label` | prints a bin label (QR to the parts in it + bin name); optional JSON as for parts |
 | `GET /api/storage-locations/{id}/label.png` | bin label preview |
 
+## 8. Public access (Cloudflare Tunnel + Access)
+
+For using the app on the phone without Tailscale (e.g. with ProtonVPN on, which can't run alongside it on iOS): the capture app is also at **`https://shelfie.roman-mueller.ch`**. Only the capture app: Part-DB and the print server stay on the tailnet, the API keeps reaching them there. QR codes on labels still point to Part-DB and need Tailscale to open.
+
+No port opens on the VM: `cloudflared` in the compose stack connects out to Cloudflare. **Cloudflare Access** (GitHub login, only Roman) sits in front, because the capture API has no login of its own (it holds the Part-DB edit token and the Azure OpenAI key). As a safety net the API answers 403 to any tunnel request that didn't go through Access.
+
+In the Cloudflare dashboard (free plan, Zero Trust needs a team name once, e.g. `roman-mueller`):
+
+1. **GitHub login.** GitHub → Settings → Developer settings → OAuth Apps → *New OAuth App*: homepage `https://<team>.cloudflareaccess.com`, callback `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`. Copy client ID and a new client secret into Zero Trust → **Settings → Authentication → Login methods → Add → GitHub**. *Test* it.
+2. **Access application first** (so the hostname is never open): Zero Trust → **Access → Applications → Add → Self-hosted**: name `Shelfie`, domain `shelfie.roman-mueller.ch`, session duration 1 month, login method GitHub only (enable *Instant Auth*). Policy `Roman`: action *Allow*, include *Emails* = the primary email of your GitHub account.
+3. **Tunnel.** Zero Trust → **Networks → Tunnels → Create → Cloudflared**, name `shelfie`. Copy the token out of the install command (the long string after `--token`) into `deploy/.env` on the VM as `CLOUDFLARE_TUNNEL_TOKEN`, and add `COMPOSE_PROFILES=public` (starts `cloudflared` with the stack). Under **Public hostname**: `shelfie` . `roman-mueller.ch`, service `HTTP` → `127.0.0.1:8080`. This also creates the DNS record.
+4. On the VM:
+
+   ```bash
+   cd /srv/shelfie/deploy
+   docker compose pull && docker compose up -d
+   docker compose logs cloudflared | tail   # "Registered tunnel connection" ×4
+   ```
+
+5. Test from a browser without Tailscale: `https://shelfie.roman-mueller.ch` → GitHub login → the app. A private window that skips the login must not show the app. Then add it to the iPhone home screen from Safari. If the login inside the home-screen app is fiddly, log in once in Safari first.
+
+To turn it off: delete the public hostname (or the tunnel) in the dashboard, or remove `COMPOSE_PROFILES=public` from `.env` and `docker compose up -d --remove-orphans`.
+
 ## Moving away from Azure
 
 1. Run `scripts/backup.sh` one last time.

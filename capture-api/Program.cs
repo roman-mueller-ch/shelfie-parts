@@ -24,6 +24,20 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 app.UseExceptionHandler();
+// Requests through the Cloudflare Tunnel carry Cf-Connecting-Ip; Cloudflare Access adds
+// Cf-Access-Jwt-Assertion once the user has logged in. If the Access application is missing
+// or misconfigured, that header is absent: refuse instead of serving the app publicly.
+// Requests over the tailnet have neither header and pass.
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.Headers.ContainsKey("Cf-Connecting-Ip") && !ctx.Request.Headers.ContainsKey("Cf-Access-Jwt-Assertion"))
+    {
+        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await ctx.Response.WriteAsync("Cloudflare Access is required for public access.");
+        return;
+    }
+    await next();
+});
 // The PWA (capture-web/, built into wwwroot/ by the Dockerfile).
 app.UseDefaultFiles();
 app.UseStaticFiles();

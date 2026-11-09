@@ -4,6 +4,10 @@
 # Each service gets its own Tailscale sidecar, so it appears on the tailnet
 # under its own name with automatic HTTPS (https://parts.<tailnet>.ts.net).
 # Nothing is published on the host's network interfaces.
+#
+# The one public entry is the capture app at https://shelfie.roman-mueller.ch,
+# through an outbound Cloudflare Tunnel (cloudflared below) behind Cloudflare
+# Access (GitHub login). Part-DB and the print server stay tailnet-only.
 
 name: shelfie
 
@@ -106,4 +110,22 @@ services:
       - Vision__ApiKey=${CAPTURE_VISION_API_KEY:?set CAPTURE_VISION_API_KEY in .env}
       - PartDb__ApiToken=${CAPTURE_PARTDB_TOKEN:?set CAPTURE_PARTDB_TOKEN in .env}
       # PartDb__BaseUrl and PrintServer__BaseUrl default to the tailnet names in appsettings.json.
+    restart: unless-stopped
+
+  # Public access to the capture app without Tailscale on the phone (e.g. with
+  # ProtonVPN on). Outbound only: no port is opened on the VM. Shares the
+  # ts-capture network namespace, so it reaches the API at 127.0.0.1:8080.
+  # The hostname and Cloudflare Access are set up in the Cloudflare dashboard
+  # (docs/getting-started.md §8); the API refuses tunnel requests that didn't
+  # pass Access. Only runs with COMPOSE_PROFILES=public in .env.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["public"]
+    command: tunnel --no-autoupdate run
+    network_mode: service:ts-capture
+    depends_on:
+      ts-capture:
+        condition: service_healthy
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
     restart: unless-stopped

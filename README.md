@@ -19,7 +19,7 @@ It exists to solve one very specific problem:
 - **Proper electronics inventory**: built on [Part-DB](https://github.com/Part-DB/Part-DB-server), with categories, footprints, storage locations, stock lots, datasheets and parameters.
 - **Labels on demand**: prints QR-code labels on a Brother P-touch P700 via a Raspberry Pi print server.
 - **A physical home for every part**: Gridfinity bins in an IKEA Helmer drawer unit, each bin a storage location in Part-DB, with 3D-print files generated from one plan file.
-- **Private by default**: everything is reachable only over Tailscale; nothing is exposed to the public internet.
+- **Private by default**: everything is reachable over Tailscale; the only public entry is the capture app, through a Cloudflare Tunnel behind a GitHub login (no open ports).
 - **Portable**: one `docker compose` stack plus two data folders. Moving hosts takes an evening, not a weekend.
 
 ## Architecture
