@@ -66,7 +66,7 @@ app.MapPost("/api/identify", async (IFormFileCollection images, [Microsoft.AspNe
     }
     catch (VisionException e)
     {
-        return Results.Problem(e.Message, statusCode: 502);
+        return Results.Problem(e.Message, statusCode: UpstreamFailed);
     }
     catch (UnsupportedImageException e)
     {
@@ -112,7 +112,7 @@ app.MapPost("/api/parts", async (HttpRequest http, PartDbClient partDb, JsonSeri
     }
     catch (PartDbException e)
     {
-        return Results.Problem(e.Message, statusCode: 502);
+        return Results.Problem(e.Message, statusCode: UpstreamFailed);
     }
 }).DisableAntiforgery();
 
@@ -127,7 +127,7 @@ app.MapPost("/api/parts/{id:int}/stock", async (int id, AddStockRequest request,
     }
     catch (PartDbException e)
     {
-        return Results.Problem(e.Message, statusCode: 502);
+        return Results.Problem(e.Message, statusCode: UpstreamFailed);
     }
 });
 
@@ -152,7 +152,7 @@ app.MapGet("/api/bins/suggest", async (string[]? category, bool? bagged, PartDbC
     }
     catch (PartDbException e)
     {
-        return Results.Problem(e.Message, statusCode: 502);
+        return Results.Problem(e.Message, statusCode: UpstreamFailed);
     }
 });
 
@@ -168,7 +168,7 @@ app.MapPost("/api/storage-locations", async (EnsureLocationRequest request, Part
     }
     catch (PartDbException e)
     {
-        return Results.Problem(e.Message, statusCode: 502);
+        return Results.Problem(e.Message, statusCode: UpstreamFailed);
     }
 });
 
@@ -187,6 +187,14 @@ app.MapFallbackToFile("index.html");
 
 app.Run();
 
+// When Part-DB, the print server or the vision model fails, the API answers with this status and a
+// problem+json body. Not 502/504: Cloudflare replaces those with its own error page, so the app only
+// saw "502" through the tunnel and lost the reason (e.g. "Printing failed: printer not found").
+partial class Program
+{
+    const int UpstreamFailed = StatusCodes.Status424FailedDependency;
+}
+
 static async Task<IResult> PrintLabel(Task<LabelContent?> content, string what, LabelPrinter printer, CancellationToken ct)
 {
     var label = await content;
@@ -198,7 +206,7 @@ static async Task<IResult> PrintLabel(Task<LabelContent?> content, string what, 
     }
     catch (Exception e) when (e is PrintServerException or HttpRequestException or TaskCanceledException)
     {
-        return Results.Problem($"Printing failed: {e.Message}", statusCode: 502);
+        return Results.Problem($"Printing failed: {e.Message}", statusCode: UpstreamFailed);
     }
 }
 
@@ -212,7 +220,7 @@ static async Task<IResult> PreviewLabel(Task<LabelContent?> content, string what
     }
     catch (Exception e) when (e is PrintServerException or HttpRequestException or TaskCanceledException)
     {
-        return Results.Problem($"Preview failed: {e.Message}", statusCode: 502);
+        return Results.Problem($"Preview failed: {e.Message}", statusCode: UpstreamFailed);
     }
 }
 

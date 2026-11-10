@@ -67,7 +67,9 @@ export interface CreatedPart {
 
 async function check(response: Response): Promise<Response> {
   if (response.ok) return response;
-  let message = `${response.status} ${response.statusText}`;
+  let message = `${response.status} ${response.statusText}`.trim();
+  if (response.status === 502 || response.status === 504)
+    message = `Shelfie didn't answer (${response.status}). Is the VM running?`;
   try {
     const problem = await response.json();
     message = problem.detail ?? problem.title ?? message;
