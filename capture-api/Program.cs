@@ -204,9 +204,21 @@ static async Task<IResult> PrintLabel(Task<LabelContent?> content, string what, 
     }
     catch (Exception e) when (e is PrintServerException or HttpRequestException or TaskCanceledException)
     {
-        return Results.Problem($"Printing failed: {e.Message}", statusCode: UpstreamFailed);
+        return Results.Problem(PrintError(e), statusCode: UpstreamFailed);
     }
 }
+
+// Plain-language reasons for the common cases; anything else keeps the technical message.
+static string PrintError(Exception e) => e switch
+{
+    // ptouch-print: "No P-Touch printer found on USB (remember to put switch to position E)".
+    // The P700 has no such switch; it's off or has switched itself off.
+    PrintServerException when e.Message.Contains("No P-Touch printer found", StringComparison.OrdinalIgnoreCase)
+        => "Label printer is off or asleep. Switch it on and try again.",
+    HttpRequestException => "Can't reach the label printer's Raspberry Pi (homelab). Is it on and online?",
+    TaskCanceledException => "The label printer didn't answer in time. Try again.",
+    _ => $"Printing failed: {e.Message}",
+};
 
 static async Task<IResult> PreviewLabel(Task<LabelContent?> content, string what, LabelPrinter printer, CancellationToken ct)
 {
