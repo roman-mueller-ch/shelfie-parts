@@ -63,11 +63,11 @@ docker compose up -d --remove-orphans
 echo "== Check (Part-DB may need a minute for migrations)"
 ok=1
 for i in $(seq 1 24); do
-  if curl -fsS -o /dev/null --max-time 10 "https://parts.$TAILNET/en/" \
-     && curl -fsS -o /dev/null --max-time 10 "https://capture.$TAILNET/api/health"; then
+  if curl -fs -o /dev/null --max-time 10 "https://parts.$TAILNET/en/" \
+     && curl -fs -o /dev/null --max-time 10 "https://capture.$TAILNET/api/health"; then
     ok=0; break
   fi
-  sleep 5
+  sleep 5   # a 502 while Part-DB starts is expected; stay quiet and retry
 done
 if [[ $ok -eq 0 ]]; then
   echo "Part-DB and the capture API answer. Done."
