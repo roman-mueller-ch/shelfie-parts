@@ -4,15 +4,19 @@
 #
 # Usage:  scripts/backup.sh [stack_dir] [rsync_target]
 #   stack_dir     folder containing docker-compose.yml and data/  (default: /srv/shelfie/deploy)
-#   rsync_target  e.g. roman@synology:/volume1/backup/shelfie     (default: $SHELFIE_BACKUP_TARGET)
+#   rsync_target  e.g. roman@synology:/volume1/backup/shelfie     (default: $SHELFIE_BACKUP_TARGET,
+#                 else SHELFIE_BACKUP_TARGET= in <stack_dir>/.env, so cron and update.sh find it too)
 #
 # Cron example (03:15 every night):
-#   15 3 * * * /srv/shelfie/scripts/backup.sh >> /var/log/shelfie-backup.log 2>&1
+#   15 3 * * * /srv/shelfie/scripts/backup.sh >> /srv/shelfie/backup.log 2>&1
 
 set -euo pipefail
 
 STACK_DIR="${1:-/srv/shelfie/deploy}"
 TARGET="${2:-${SHELFIE_BACKUP_TARGET:-}}"
+if [[ -z "$TARGET" && -f "$STACK_DIR/.env" ]]; then
+  TARGET="$(sed -nE 's/^SHELFIE_BACKUP_TARGET=//p' "$STACK_DIR/.env" | tail -1 | tr -d "\"'")"
+fi
 KEEP_LOCAL="${SHELFIE_BACKUP_KEEP:-7}"
 
 DATA="$STACK_DIR/data"
