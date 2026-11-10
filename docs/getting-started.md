@@ -146,7 +146,7 @@ The capture API runs in the VM stack (`capture-api` + `ts-capture` sidecar) at `
    curl -X POST https://capture.<tailnet>.ts.net/api/identify -F images=@part.jpg
    ```
 
-Update after a new image: `docker compose pull capture-api && docker compose up -d capture-api`.
+Update after a new image: `docker compose pull capture-api && docker compose up -d capture-api` (in `/srv/shelfie/deploy`; everything else: §9).
 
 For local development (`dotnet run` in `capture-api/`), the secrets go into `dotnet user-secrets`: `Vision:BaseUrl`, `Vision:ApiKey`, `PartDb:ApiToken`.
 
@@ -203,6 +203,24 @@ In the Cloudflare dashboard (free plan; `rmlabs.ch` added as a site with Cloudfl
 5. Test without Tailscale: `https://parts.rmlabs.ch` → GitHub login → the app; `https://db.rmlabs.ch` → GitHub login → Part-DB login. A private window must not get past the GitHub login. Add the app to the iPhone home screen from Safari (delete the old icon first). If the login inside the home-screen app is fiddly, log in once in Safari first. If Part-DB's login redirects to `http://`, turn on *SSL/TLS → Edge Certificates → Always Use HTTPS* for `rmlabs.ch`.
 
 To turn it off: delete the public hostname (or the tunnel) in the dashboard, or remove `COMPOSE_PROFILES=public` from `.env` and `docker compose up -d --remove-orphans`.
+
+## 9. Updates
+
+Part-DB is **pinned** (`jbtronics/part-db1:${PARTDB_VERSION:-2.20.5}`), so a `docker compose pull` for the capture API never updates it by accident. The capture API, Tailscale and cloudflared follow `:latest`.
+
+To hear about new Part-DB versions: GitHub → `Part-DB/Part-DB-server` → **Watch → Custom → Releases**.
+
+On the VM (`scripts/update.sh`):
+
+```bash
+/srv/shelfie/scripts/update.sh --check     # running vs newest Part-DB version, changes nothing
+/srv/shelfie/scripts/update.sh             # backup, pull, restart, check (Part-DB stays on its version)
+/srv/shelfie/scripts/update.sh 2.21.0      # the same, moving Part-DB to 2.21.0
+```
+
+Read the release notes before moving Part-DB, especially for a new major version. Database migrations run when Part-DB starts (`DB_AUTOMIGRATE=true`, which also writes its own backup to `uploads/.automigration-backup`); the script makes a full backup first (`scripts/backup.sh`, off-site too when `SHELFIE_BACKUP_TARGET` is set) and checks afterwards that Part-DB and the capture API answer over the tailnet. Going back after a migration means restoring the database from `deploy/backups/`, not just the old image.
+
+Only the capture API: `cd /srv/shelfie/deploy && docker compose pull capture-api && docker compose up -d capture-api`.
 
 ## Moving away from Azure
 

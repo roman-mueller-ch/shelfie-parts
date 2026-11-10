@@ -106,7 +106,7 @@ shelfie-parts/
 ├── print-server/   # FastAPI print service for the Pi (own compose stack + Tailscale sidecar)
 ├── vision/         # vision prompt, JSON schema, identify.py test CLI
 ├── storage/        # plan.json (drawers and bins), generate.py (Gridfinity STLs), plates.py (A1 plates as 3MF), bambu/ (A1 print preset)
-├── scripts/        # backup.sh
+├── scripts/        # backup.sh, update.sh
 ├── brand/          # logo and app icons (SVG masters, rendered PNGs, render.mjs)
 └── docs/           # getting-started.md, storage.md (Gridfinity bins in an IKEA Helmer), what-goes-where.md, drawer-layouts.md
 ```

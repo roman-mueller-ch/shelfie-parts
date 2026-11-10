@@ -43,7 +43,9 @@ services:
     restart: unless-stopped
 
   partdb:
-    image: jbtronics/part-db1:latest
+    # Pinned: Part-DB only changes when you choose (scripts/update.sh <version>
+    # sets PARTDB_VERSION in .env). Release notes: github.com/Part-DB/Part-DB-server/releases
+    image: jbtronics/part-db1:${PARTDB_VERSION:-2.20.5}
     network_mode: service:ts-parts
     depends_on:
       ts-parts:
@@ -55,6 +57,9 @@ services:
     environment:
       - DATABASE_URL=sqlite:///%kernel.project_dir%/var/db/app.db
       - DATABASE_SQLITE_ENFORCE_FOREIGN_KEYS=1
+      # Run database migrations on start after an update (backup of the database
+      # in uploads/.automigration-backup first). scripts/update.sh backs up as well.
+      - DB_AUTOMIGRATE=true
       - APP_ENV=docker
       - APP_SECRET=${PARTDB_APP_SECRET:?set PARTDB_APP_SECRET in .env}
       - DEFAULT_LANG=en
