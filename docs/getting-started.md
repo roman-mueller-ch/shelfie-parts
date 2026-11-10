@@ -88,31 +88,30 @@ uv run vision/identify.py bag.jpg closeup.jpg --hint "from my last AliExpress or
 
 ## 5. Backups
 
-`scripts/backup.sh` writes a consistent SQLite copy plus uploads to `deploy/backups/` and rsyncs it to the Synology over Tailscale. It runs nightly by cron and before every `scripts/update.sh`. The target comes from `SHELFIE_BACKUP_TARGET` in `deploy/.env` (or the environment).
+`scripts/backup.sh` writes a consistent SQLite copy plus uploads to `deploy/backups/` and copies it to the Synology over Tailscale. It runs nightly by cron and before every `scripts/update.sh`. The target comes from `SHELFIE_BACKUP_TARGET` in `deploy/.env` (or the environment).
 
-Once, on the VM (the Synology on the tailnet, *Control Panel → File Services → rsync* enabled, SSH on, a shared folder e.g. `backup`):
+The copy goes to the Synology's **rsync service with a dedicated DSM user**, not over SSH: DSM only allows SSH for administrators, and an admin SSH key on a cloud VM would give that VM full control of the NAS. The backup user can write to one shared folder and nothing else.
+
+On the Synology (DSM, on the tailnet as `diskstation218`):
+
+1. **Control Panel → File Services → rsync:** *Enable rsync service* on. Leave *Enable rsync account* off (the daemon then accepts DSM users).
+2. **Control Panel → User & Group → Create:** user `shelfie-backup`, a long random password, only in the group `users`. Permissions: **Read/Write on `backup`**, *No access* on all other shared folders. Applications: deny everything except **rsync** (allow).
+3. In `backup`, create the folder `shelfie` (File Station).
+
+On the VM:
 
 ```bash
-# 1. A key for the VM, without passphrase (cron can't type one)
-ssh-keygen -t ed25519 -N "" -C shelfie-vm-backup -f ~/.ssh/shelfie_backup
-cat ~/.ssh/shelfie_backup.pub        # add this line to ~/.ssh/authorized_keys of your user on the Synology
-
-# 2. Tell ssh/rsync to use it for the Synology (its tailnet name)
-cat >> ~/.ssh/config <<'CFG'
-Host <synology>
-  IdentityFile ~/.ssh/shelfie_backup
-  IdentitiesOnly yes
-CFG
-ssh <user>@<synology> true           # first time: accept the host key; must not ask for a password
-ssh <user>@<synology> mkdir -p /volume1/backup/shelfie
-
-# 3. Target into deploy/.env, test, schedule
-echo 'SHELFIE_BACKUP_TARGET=<user>@<synology>:/volume1/backup/shelfie' >> /srv/shelfie/deploy/.env
+mkdir -p ~/.config/shelfie
+read -rs PW && printf '%s\n' "$PW" > ~/.config/shelfie/rsync.pass && unset PW   # type the password, Enter
+chmod 600 ~/.config/shelfie/rsync.pass
+echo 'SHELFIE_BACKUP_TARGET=rsync://shelfie-backup@diskstation218.tailf98c37.ts.net/backup/shelfie' >> /srv/shelfie/deploy/.env
 /srv/shelfie/scripts/backup.sh       # must end with "synced to …"
 ( crontab -l 2>/dev/null; echo '15 3 * * * /srv/shelfie/scripts/backup.sh >> /srv/shelfie/backup.log 2>&1' ) | crontab -
 ```
 
-The VM keeps the newest `SHELFIE_BACKUP_KEEP` backups (default 7). The rsync adds to the Synology without deleting there; the NAS prunes on its own schedule (10 newest plus one per week for 6 months), shared with the homelab backups. On DSM, the Synology's own home folder permissions must not be group/world-writable or sshd ignores `authorized_keys`.
+In the Tailscale admin console, *Disable key expiry* for the Synology, or it drops off the tailnet after about 6 months and the backups stop.
+
+The VM keeps the newest `SHELFIE_BACKUP_KEEP` backups (default 7). The rsync adds to the Synology without deleting there; the NAS prunes on its own schedule (10 newest plus one per week for 6 months), shared with the homelab backups. A plain `user@host:/path` target (rsync over SSH) still works with a host that allows it.
 
 ## 6. Label printer (Raspberry Pi)
 

@@ -4,8 +4,12 @@
 #
 # Usage:  scripts/backup.sh [stack_dir] [rsync_target]
 #   stack_dir     folder containing docker-compose.yml and data/  (default: /srv/shelfie/deploy)
-#   rsync_target  e.g. roman@synology:/volume1/backup/shelfie     (default: $SHELFIE_BACKUP_TARGET,
-#                 else SHELFIE_BACKUP_TARGET= in <stack_dir>/.env, so cron and update.sh find it too)
+#   rsync_target  e.g. rsync://shelfie-backup@diskstation218.<tailnet>.ts.net/backup/shelfie
+#                 (Synology rsync service, a DSM user with write access to that shared folder only)
+#                 or user@host:/path over SSH. Default: $SHELFIE_BACKUP_TARGET, else
+#                 SHELFIE_BACKUP_TARGET= in <stack_dir>/.env, so cron and update.sh find it too.
+#   For rsync:// the password is read from ~/.config/shelfie/rsync.pass (chmod 600),
+#   or $SHELFIE_BACKUP_PASSWORD_FILE.
 #
 # Cron example (03:15 every night):
 #   15 3 * * * /srv/shelfie/scripts/backup.sh >> /srv/shelfie/backup.log 2>&1
@@ -41,7 +45,14 @@ ls -1dt "$OUT_ROOT"/*/ | tail -n +"$((KEEP_LOCAL + 1))" | xargs -r rm -rf
 # 4. Ship off-host. No --delete: the Synology keeps more than the VM and applies its own
 #    retention (10 newest + one per week for 6 months, prune-backups.sh in DSM Task Scheduler).
 if [[ -n "$TARGET" ]]; then
-  rsync -a "$OUT_ROOT/" "$TARGET/"
+  RSYNC_OPTS=(-a)
+  if [[ "$TARGET" == rsync://* ]]; then
+    PASS_FILE="${SHELFIE_BACKUP_PASSWORD_FILE:-$HOME/.config/shelfie/rsync.pass}"
+    [[ -r "$PASS_FILE" ]] || { echo "$(date -Is) missing rsync password file $PASS_FILE" >&2; exit 1; }
+    # DSM's rsync modules don't keep Unix owners/permissions anyway.
+    RSYNC_OPTS=(-rlt --password-file="$PASS_FILE")
+  fi
+  rsync "${RSYNC_OPTS[@]}" "$OUT_ROOT/" "$TARGET/"
   echo "$(date -Is) synced to $TARGET"
 else
   echo "$(date -Is) no rsync target set; backup kept locally only" >&2
