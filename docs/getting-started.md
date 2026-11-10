@@ -94,9 +94,10 @@ The copy goes to the Synology's **rsync service with a dedicated DSM user**, not
 
 On the Synology (DSM, on the tailnet as `diskstation218`):
 
-1. **Control Panel → File Services → rsync:** *Enable rsync service* on. Leave *Enable rsync account* off (the daemon then accepts DSM users).
-2. **Control Panel → User & Group → Create:** user `shelfie-backup`, a long random password, only in the group `users`. Permissions: **Read/Write on `backup`**, *No access* on all other shared folders. Applications: deny everything except **rsync** (allow).
-3. In `backup`, create the folder `shelfie` (File Station).
+1. **Control Panel → File Services → rsync:** *Enable rsync service* **and** *Enable rsync account* on. Without rsync accounts, a login with a user name fails with `@ERROR: account system disabled`.
+2. **Control Panel → User & Group → Create:** user `shelfie-backup`, a long random password, only in the group `users`. Permissions: **Read/Write on `homelab-backup`** (the backup shared folder), *No access* on all other shared folders. Applications: deny everything except **rsync** (allow).
+3. **Edit rsync Account → Create:** `shelfie-backup` with the same password.
+4. In the backup shared folder, create the folder `shelfie` (File Station). Check the restriction from the VM: an rsync to another shared folder (e.g. `rsync://shelfie-backup@…/home/`) must fail.
 
 On the VM:
 
@@ -104,7 +105,7 @@ On the VM:
 mkdir -p ~/.config/shelfie
 read -rs PW && printf '%s\n' "$PW" > ~/.config/shelfie/rsync.pass && unset PW   # type the password, Enter
 chmod 600 ~/.config/shelfie/rsync.pass
-echo 'SHELFIE_BACKUP_TARGET=rsync://shelfie-backup@diskstation218.tailf98c37.ts.net/backup/shelfie' >> /srv/shelfie/deploy/.env
+echo 'SHELFIE_BACKUP_TARGET=rsync://shelfie-backup@diskstation218.tailf98c37.ts.net/homelab-backup/shelfie' >> /srv/shelfie/deploy/.env
 /srv/shelfie/scripts/backup.sh       # must end with "synced to …"
 ( crontab -l 2>/dev/null; echo '15 3 * * * /srv/shelfie/scripts/backup.sh >> /srv/shelfie/backup.log 2>&1' ) | crontab -
 ```
