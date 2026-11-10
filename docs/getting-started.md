@@ -165,24 +165,42 @@ For local development (`dotnet run` in `capture-api/`), the secrets go into `dot
 
 ## 8. Public access (Cloudflare Tunnel + Access)
 
-For using the app on the phone without Tailscale (e.g. with ProtonVPN on, which can't run alongside it on iOS): the capture app is also at **`https://shelfie.roman-mueller.ch`**. Only the capture app: Part-DB and the print server stay on the tailnet, the API keeps reaching them there. QR codes on labels still point to Part-DB and need Tailscale to open.
+For use without Tailscale (e.g. on the iPhone with ProtonVPN on; iOS runs only one VPN), two services are also public on the domain `rmlabs.ch`:
 
-No port opens on the VM: `cloudflared` in the compose stack connects out to Cloudflare. **Cloudflare Access** (GitHub login, only Roman) sits in front, because the capture API has no login of its own (it holds the Part-DB edit token and the Azure OpenAI key). As a safety net the API answers 403 to any tunnel request that didn't go through Access.
+| Address | Service | Tunnel | Reaches |
+|---|---|---|---|
+| **`https://parts.rmlabs.ch`** | capture app (Shelfie) | `shelfie`, container `cloudflared` | `127.0.0.1:8080` in `ts-capture`'s namespace |
+| **`https://db.rmlabs.ch`** | Part-DB | `shelfie-partdb`, container `cloudflared-partdb` | `127.0.0.1:80` in `ts-parts`' namespace |
 
-In the Cloudflare dashboard (free plan, Zero Trust needs a team name once, e.g. `roman-mueller`):
+The print server stays tailnet-only; the capture API reaches it and Part-DB over the tailnet as before. Two tunnels because each `cloudflared` container shares one service's network namespace (like the Tailscale sidecars), so one container can't reach both cleanly.
 
-1. **GitHub login.** GitHub → Settings → Developer settings → OAuth Apps → *New OAuth App*: homepage `https://<team>.cloudflareaccess.com`, callback `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`. Copy client ID and a new client secret into Zero Trust → **Settings → Authentication → Login methods → Add → GitHub**. *Test* it.
-2. **Access application first** (so the hostname is never open): Zero Trust → **Access → Applications → Add → Self-hosted**: name `Shelfie`, domain `shelfie.roman-mueller.ch`, session duration 1 month, login method GitHub only (enable *Instant Auth*). Policy `Roman`: action *Allow*, include *Emails* = the primary email of your GitHub account.
-3. **Tunnel.** Zero Trust → **Networks → Tunnels → Create → Cloudflared**, name `shelfie`. Copy the token out of the install command (the long string after `--token`) into `deploy/.env` on the VM as `CLOUDFLARE_TUNNEL_TOKEN`, and add `COMPOSE_PROFILES=public` (starts `cloudflared` with the stack). Under **Public hostname**: `shelfie` . `roman-mueller.ch`, service `HTTP` → `127.0.0.1:8080`. This also creates the DNS record.
-4. On the VM:
+No port opens on the VM: `cloudflared` connects out to Cloudflare. **Cloudflare Access** (GitHub login, only Roman) sits in front of both: the capture API has no login of its own (it holds the Part-DB edit token and the Azure OpenAI key), and Part-DB's own login page shouldn't face the internet directly. Part-DB still asks for its own login after Access. As a safety net the capture API answers 403 to any tunnel request that didn't go through Access.
+
+**QR codes and links:** with `PARTDB_PUBLIC_URL=https://db.rmlabs.ch` in `deploy/.env`, new labels (part and bin) and the app's "open in Part-DB" links point to `db.rmlabs.ch`, so scanning works without Tailscale. Labels printed before keep the tailnet address. Part-DB answers to both names (`TRUSTED_HOSTS=^(parts|db)\.`).
+
+In the Cloudflare dashboard (free plan; `rmlabs.ch` added as a site with Cloudflare's nameservers; Zero Trust team `roman-mueller`):
+
+1. **GitHub login** (once). GitHub → Settings → Developer settings → OAuth Apps → *New OAuth App*: homepage `https://<team>.cloudflareaccess.com`, callback `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`. Copy client ID and a new client secret into Zero Trust → **Settings → Authentication → Login methods → Add → GitHub**. *Test* it and note the email it shows.
+2. **Access applications first** (so a hostname is never open), one per service: Zero Trust → **Access → Applications → Add → Self-hosted**:
+   - `Shelfie`: hostname `parts.rmlabs.ch`
+   - `Part-DB`: hostname `db.rmlabs.ch`
+
+   Both: session duration 1 month, login methods GitHub only with *Instant Auth*, policy `Roman`: action *Allow*, include *Emails* = the email from step 1 (the policy can be reused).
+3. **Tunnels.** Zero Trust → **Networks → Tunnels → Create → Cloudflared**, one per service. Copy each token (only the `eyJ…` string after `--token`, no quotes) into `deploy/.env` on the VM:
+   - `shelfie` → `CLOUDFLARE_TUNNEL_TOKEN`; public hostname `parts` . `rmlabs.ch`, service `HTTP` → `127.0.0.1:8080`
+   - `shelfie-partdb` → `CLOUDFLARE_TUNNEL_TOKEN_PARTDB`; public hostname `db` . `rmlabs.ch`, service `HTTP` → `127.0.0.1:80`
+
+   Plus `COMPOSE_PROFILES=public` and `PARTDB_PUBLIC_URL=https://db.rmlabs.ch`. The public hostnames create the DNS records. The install page's *Continue* stays disabled until the container is running.
+4. Copy the repo to the VM (rsync from §3, excluding `deploy/data` and `deploy/.env`), then on the VM:
 
    ```bash
    cd /srv/shelfie/deploy
    docker compose pull && docker compose up -d
-   docker compose logs cloudflared | tail   # "Registered tunnel connection" ×4
+   docker compose logs cloudflared cloudflared-partdb --tail 5   # "Registered tunnel connection"
    ```
 
-5. Test from a browser without Tailscale: `https://shelfie.roman-mueller.ch` → GitHub login → the app. A private window that skips the login must not show the app. Then add it to the iPhone home screen from Safari. If the login inside the home-screen app is fiddly, log in once in Safari first.
+   "Provided Tunnel token is not valid" means extra characters around the token in `.env`.
+5. Test without Tailscale: `https://parts.rmlabs.ch` → GitHub login → the app; `https://db.rmlabs.ch` → GitHub login → Part-DB login. A private window must not get past the GitHub login. Add the app to the iPhone home screen from Safari (delete the old icon first). If the login inside the home-screen app is fiddly, log in once in Safari first. If Part-DB's login redirects to `http://`, turn on *SSL/TLS → Edge Certificates → Always Use HTTPS* for `rmlabs.ch`.
 
 To turn it off: delete the public hostname (or the tunnel) in the dashboard, or remove `COMPOSE_PROFILES=public` from `.env` and `docker compose up -d --remove-orphans`.
 

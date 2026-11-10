@@ -27,6 +27,7 @@ public sealed class PartDbClient
     private const int MaxMatches = 10;
     private readonly HttpClient _http;
     private readonly string _baseUrl;
+    private readonly string _publicUrl; // for links people open: QR codes, part pages
 
     public PartDbClient(HttpClient http, IOptions<PartDbOptions> options)
     {
@@ -34,6 +35,7 @@ public sealed class PartDbClient
         if (string.IsNullOrEmpty(o.BaseUrl) || string.IsNullOrEmpty(o.ApiToken))
             throw new InvalidOperationException("PartDb:BaseUrl and PartDb:ApiToken must be configured.");
         _baseUrl = o.BaseUrl.TrimEnd('/');
+        _publicUrl = string.IsNullOrWhiteSpace(o.PublicUrl) ? _baseUrl : o.PublicUrl.Trim().TrimEnd('/');
         _http = http;
         _http.BaseAddress = new Uri(_baseUrl + "/api/");
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", o.ApiToken);
@@ -152,7 +154,7 @@ public sealed class PartDbClient
             throw;
         }
 
-        return new CreatedPart(id, request.Name.Trim(), $"{_baseUrl}/en/part/{id}", $"{_baseUrl}/scan/part/{id}", photos.Count,
+        return new CreatedPart(id, request.Name.Trim(), $"{_publicUrl}/en/part/{id}", $"{_publicUrl}/scan/part/{id}", photos.Count,
             location?.Name, location?.Id, newBin);
     }
 
@@ -199,7 +201,7 @@ public sealed class PartDbClient
             .Where(x => locationIri is null || LocationIri(x) == locationIri)
             .Select(x => x.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "name") : null)
             .FirstOrDefault();
-        return new StockAdded(id, Str(updated, "name") ?? "", $"{_baseUrl}/en/part/{id}", request.Quantity,
+        return new StockAdded(id, Str(updated, "name") ?? "", $"{_publicUrl}/en/part/{id}", request.Quantity,
             updated.TryGetProperty("total_instock", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetDouble() : 0,
             location, newLot,
             locationIri is null ? null : int.Parse(locationIri["/api/storage_locations/".Length..]), newBin);
@@ -286,7 +288,7 @@ public sealed class PartDbClient
         return new LabelContent(
             NullIfEmpty(overrides.Title) ?? Str(doc.RootElement, "name") ?? $"Location {id}",
             NullIfEmpty(overrides.Subtitle),
-            $"{_baseUrl}/scan/location/{id}",
+            $"{_publicUrl}/scan/location/{id}",
             Math.Clamp(overrides.Copies, 1, 20));
     }
 
@@ -313,7 +315,7 @@ public sealed class PartDbClient
         return new LabelContent(
             NullIfEmpty(overrides.Title) ?? mpn ?? name,
             NullIfEmpty(overrides.Subtitle) ?? location ?? (mpn is null ? null : name),
-            $"{_baseUrl}/scan/part/{id}",
+            $"{_publicUrl}/scan/part/{id}",
             Math.Clamp(overrides.Copies, 1, 20));
     }
 
@@ -429,7 +431,7 @@ public sealed class PartDbClient
             part.TryGetProperty("total_instock", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetDouble() : 0,
             lots.Select(lot => lot.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "name") : null)
                 .OfType<string>().Distinct().ToList(),
-            $"{_baseUrl}/en/part/{id}",
+            $"{_publicUrl}/en/part/{id}",
             term,
             IsSamePart(item, name, mpn));
     }

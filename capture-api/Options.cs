@@ -13,4 +13,7 @@ public sealed class PartDbOptions
 {
     public string BaseUrl { get; set; } = "";
     public string ApiToken { get; set; } = "";
+    /// <summary>Address for links people open (QR codes, "open in Part-DB"), e.g. https://db.rmlabs.ch.
+    /// Empty: same as BaseUrl (the tailnet address the API itself uses).</summary>
+    public string PublicUrl { get; set; } = "";
 }

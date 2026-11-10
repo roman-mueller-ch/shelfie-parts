@@ -5,9 +5,10 @@
 # under its own name with automatic HTTPS (https://parts.<tailnet>.ts.net).
 # Nothing is published on the host's network interfaces.
 #
-# The one public entry is the capture app at https://shelfie.roman-mueller.ch,
-# through an outbound Cloudflare Tunnel (cloudflared below) behind Cloudflare
-# Access (GitHub login). Part-DB and the print server stay tailnet-only.
+# Public entries (profile "public"): the capture app at https://parts.rmlabs.ch
+# and Part-DB at https://db.rmlabs.ch, each through its own outbound Cloudflare
+# Tunnel behind Cloudflare Access (GitHub login). No port is opened on the host.
+# The print server stays tailnet-only.
 
 name: shelfie
 
@@ -65,8 +66,24 @@ services:
       - USE_GRAVATAR=0
       # Requests arrive from the Tailscale sidecar on localhost.
       - TRUSTED_PROXIES=127.0.0.1
-      # Only answer to the tailnet name (parts.<tailnet>.ts.net).
-      - TRUSTED_HOSTS=^parts\.
+      # Only answer to the tailnet name (parts.<tailnet>.ts.net) and the public
+      # name through the tunnel (db.rmlabs.ch).
+      - TRUSTED_HOSTS=^(parts|db)\.
+    restart: unless-stopped
+
+  # Public access to Part-DB (https://db.rmlabs.ch). A tunnel of its own, in
+  # ts-parts' network namespace, so it reaches Part-DB at 127.0.0.1:80; Part-DB
+  # trusts 127.0.0.1 as proxy and takes https from X-Forwarded-Proto.
+  cloudflared-partdb:
+    image: cloudflare/cloudflared:latest
+    profiles: ["public"]
+    command: tunnel --no-autoupdate run
+    network_mode: service:ts-parts
+    depends_on:
+      ts-parts:
+        condition: service_healthy
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN_PARTDB:-}
     restart: unless-stopped
 
   # ------------------------------------------------------------ Capture API
@@ -110,9 +127,11 @@ services:
       - Vision__ApiKey=${CAPTURE_VISION_API_KEY:?set CAPTURE_VISION_API_KEY in .env}
       - PartDb__ApiToken=${CAPTURE_PARTDB_TOKEN:?set CAPTURE_PARTDB_TOKEN in .env}
       # PartDb__BaseUrl and PrintServer__BaseUrl default to the tailnet names in appsettings.json.
+      # Links people open (QR codes on labels, "open in Part-DB"); empty = the tailnet address.
+      - PartDb__PublicUrl=${PARTDB_PUBLIC_URL:-}
     restart: unless-stopped
 
-  # Public access to the capture app without Tailscale on the phone (e.g. with
+  # Public access to the capture app (https://parts.rmlabs.ch) without Tailscale on the phone (e.g. with
   # ProtonVPN on). Outbound only: no port is opened on the VM. Shares the
   # ts-capture network namespace, so it reaches the API at 127.0.0.1:8080.
   # The hostname and Cloudflare Access are set up in the Cloudflare dashboard
