@@ -222,17 +222,57 @@ To turn it off: delete the public hostname (or the tunnel) in the dashboard, or 
 
 Part-DB is **pinned** (`jbtronics/part-db1:${PARTDB_VERSION:-2.20.5}`), so a `docker compose pull` for the capture API never updates it by accident. The capture API, Tailscale and cloudflared follow `:latest`.
 
-To hear about new Part-DB versions: GitHub → `Part-DB/Part-DB-server` → **Watch → Custom → Releases**.
-
 On the VM (`scripts/update.sh`):
 
 ```bash
 /srv/shelfie/scripts/update.sh --check     # running vs newest Part-DB version, changes nothing
 /srv/shelfie/scripts/update.sh             # backup, pull, restart, check (Part-DB stays on its version)
 /srv/shelfie/scripts/update.sh 2.21.0      # the same, moving Part-DB to 2.21.0
+/srv/shelfie/scripts/update.sh --auto      # for cron: see below
 ```
 
-Read the release notes before moving Part-DB, especially for a new major version. Database migrations run when Part-DB starts (`DB_AUTOMIGRATE=true`, which also writes its own backup to `uploads/.automigration-backup`); the script makes a full backup first (`scripts/backup.sh`, off-site too when `SHELFIE_BACKUP_TARGET` is set) and checks afterwards that Part-DB and the capture API answer over the tailnet. Going back after a migration means restoring the database from `deploy/backups/`, not just the old image.
+Database migrations run when Part-DB starts (`DB_AUTOMIGRATE=true`, which also writes its own backup to `uploads/.automigration-backup`); the script makes a full backup first (`scripts/backup.sh`, off-site to the Synology) and checks afterwards that Part-DB and the capture API answer over the tailnet. Going back after a migration means restoring the database from `deploy/backups/`, not just the old image.
+
+**Automatic, with ntfy** (like openGym on the homelab): `--auto` moves Part-DB to the newest release **within its major version** and reports to the homelab's ntfy server (topic `homelab`):
+
+| Case | Message | Priority |
+|---|---|---|
+| Already newest | ✔️ *Part-DB is up to date* | min (silent) |
+| Updated | ✅ *Part-DB updated to 2.21.0*, link to the release notes | default |
+| New major version | 📦 *Part-DB 3.0.0 available*: not installed; read the notes, then `update.sh 3.0.0` by hand | default |
+| Anything failed | ⚠️ *Part-DB update failed* with the step | high |
+
+If the image for a new release isn't published yet, it stays on the old version and the next run retries. The nightly backup reports failures the same way.
+
+Setup, once:
+
+1. **On the homelab Pi** (ntfy's directory, e.g. `~/apps/ntfy`), a write-only user for the VM:
+
+   ```bash
+   docker compose exec ntfy ntfy user add shelfie-vm            # asks for a password (not needed later)
+   docker compose exec ntfy ntfy access shelfie-vm homelab write-only
+   docker compose exec ntfy ntfy token add shelfie-vm           # prints tk_…
+   ```
+
+2. **On the VM:**
+
+   ```bash
+   mkdir -p ~/.config/shelfie
+   read -rs T && printf '%s\n' "$T" > ~/.config/shelfie/ntfy-token && unset T   # paste tk_…, Enter
+   chmod 600 ~/.config/shelfie/ntfy-token
+   printf 'NTFY_URL=https://ntfy.roman-mueller.ch\nNTFY_TOPIC=homelab\n' >> /srv/shelfie/deploy/.env
+   /srv/shelfie/scripts/notify.sh "Hello from shelfie-vm" "ntfy works" default tada
+   crontab -e
+   ```
+
+   Replace the backup line and add the update line (times in UTC: 03:15 and 09:05, i.e. 04:15 and 10:05 in Swiss winter time):
+
+   ```
+   15 3 * * * /srv/shelfie/scripts/backup.sh >> /srv/shelfie/backup.log 2>&1 || /srv/shelfie/scripts/notify.sh "Shelfie backup failed" "Nightly backup on shelfie-vm failed, see /srv/shelfie/backup.log" high warning
+   5 9 * * *  /srv/shelfie/scripts/update.sh --auto >> /srv/shelfie/update.log 2>&1
+   ```
+
+To also hear about releases without the VM: GitHub → `Part-DB/Part-DB-server` → **Watch → Custom → Releases**.
 
 Only the capture API: `cd /srv/shelfie/deploy && docker compose pull capture-api && docker compose up -d capture-api`.
 
