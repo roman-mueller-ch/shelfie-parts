@@ -6,6 +6,11 @@ using CaptureApi.Vision;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// When Part-DB, the print server or the vision model fails, the API answers with this status and a
+// problem+json body. Not 502/504: Cloudflare replaces those with its own error page, so the app only
+// saw "502" through the tunnel and lost the reason (e.g. "Printing failed: printer not found").
+const int UpstreamFailed = StatusCodes.Status424FailedDependency;
+
 // snake_case everywhere: the vision schema uses it, so the whole API does too.
 var json = new JsonSerializerOptions(JsonSerializerDefaults.Web)
 {
@@ -187,13 +192,6 @@ app.MapFallbackToFile("index.html");
 
 app.Run();
 
-// When Part-DB, the print server or the vision model fails, the API answers with this status and a
-// problem+json body. Not 502/504: Cloudflare replaces those with its own error page, so the app only
-// saw "502" through the tunnel and lost the reason (e.g. "Printing failed: printer not found").
-partial class Program
-{
-    const int UpstreamFailed = StatusCodes.Status424FailedDependency;
-}
 
 static async Task<IResult> PrintLabel(Task<LabelContent?> content, string what, LabelPrinter printer, CancellationToken ct)
 {
