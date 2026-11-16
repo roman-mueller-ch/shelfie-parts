@@ -10,6 +10,17 @@ It exists to solve one very specific problem:
 
 > You order a part on AliExpress, wait three weeks for it to arrive, and then find the same part in a box you already had.
 
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/screenshots/capture.png" alt="Capture screen with two photos of a part"><br><sub><b>1. Snap</b> a part, its bag or a listing</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/already-in-stock.png" alt="Result: already in stock, 3 pcs in bin D4-A3"><br><sub><b>2. Already have it?</b> Stock and bin at a glance</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/review-bin.png" alt="Review screen with suggested bin D4-A3"><br><sub><b>3. Review</b>, with a suggested bin</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/saved-label.png" alt="Saved, with part label and bin label previews"><br><sub><b>4. Saved</b>, QR labels ready to print</sub></td>
+  </tr>
+</table>
+
+<sub>Screenshots of the capture PWA with sample data.</sub>
+
 ---
 
 ## Features
