@@ -164,4 +164,4 @@ shelfie-parts/
 
 ## License
 
-Not decided yet.
+[MIT](LICENSE). Exceptions: the Space Grotesk font in `storage/fonts/` is under the [SIL Open Font License](storage/fonts/OFL.txt). Part-DB, Tailscale, cloudflared and the other services run from their own images under their own licences; this repo only configures them.
