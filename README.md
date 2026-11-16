@@ -26,7 +26,7 @@ It exists to solve one very specific problem:
 ## Features
 
 - **Photo capture**: take a photo of a part, its packaging or a product page; an AI vision model extracts name, MPN, manufacturer, category and package.
-- **"Do I already have it?"**: before ordering, share a screenshot or link and Shelfie searches your inventory: *"3 in Box 4."*
+- **"Do I already have it?"**: before ordering, take a photo and Shelfie searches your inventory: *"3 pcs in D4-A3."* Similar parts are listed separately, so an ESP32-C3 doesn't count as an S3.
 - **Proper electronics inventory**: built on [Part-DB](https://github.com/Part-DB/Part-DB-server), with categories, footprints, storage locations, stock lots, datasheets and parameters.
 - **Labels on demand**: prints QR-code labels on a Brother P-touch P700 via a Raspberry Pi print server.
 - **A physical home for every part**: Gridfinity bins in an IKEA Helmer drawer unit, each bin a storage location in Part-DB, with 3D-print files generated from one plan file.
@@ -36,28 +36,34 @@ It exists to solve one very specific problem:
 ## Architecture
 
 ```
-  📱 Phone (PWA)                      ☁️  Azure VM (docker compose)
-  ┌─────────────┐   Tailscale     ┌──────────────────────────────────┐
-  │ capture-web │ ─────────────▶  │ capture-api  (ASP.NET Core)      │
-  └─────────────┘                 │   │                              │
-                                  │   ├──▶ Part-DB (SQLite)          │
-                                  │   └──▶ Azure OpenAI (vision)     │
-                                  └───────────────┬──────────────────┘
-                                                  │ Tailscale
-                                                  ▼
-                                  🏠 Raspberry Pi 3: print-server (FastAPI)
-                                                  │ USB
-                                                  ▼
-                                           🖨️  Brother P-touch P700
+ 📱 Phone (PWA)                                   ☁️  Azure VM (docker compose)
+ ┌─────────────┐  at home: Tailscale           ┌───────────────────────────────────────┐
+ │ capture-web │ ────────────────────────────▶ │ capture-api (ASP.NET Core)            │
+ └─────────────┘  on the go: Cloudflare Tunnel │   ├──▶ Part-DB (SQLite)               │
+        │         + Access (GitHub login)      │   └──▶ Azure OpenAI (vision)          │
+        │                                      │ Tailscale sidecar per service         │
+        └─ scan a label ─▶ Part-DB ──────────▶ │ cloudflared per public service        │
+                                               └───────┬─────────────────┬─────────────┘
+                                                       │ Tailscale       │ Tailscale (nightly rsync)
+                                                       ▼                 ▼
+                              🏠 Raspberry Pi 3: print-server     🏠 Synology: backups
+                                        │ USB
+                                        ▼                         🔔 ntfy (homelab): update and
+                              🖨️ Brother P-touch P700                 backup notifications
 ```
+
+- **Inside the tailnet**, every service has its own Tailscale sidecar and HTTPS name (`parts.`, `capture.`, `labels.<tailnet>.ts.net`). The VM has no open inbound ports.
+- **On the go** (e.g. with a phone VPN on that rules out Tailscale), the capture app (`parts.rmlabs.ch`) and Part-DB (`db.rmlabs.ch`) are reachable through outbound Cloudflare Tunnels, behind Cloudflare Access with a GitHub login. The print server stays tailnet-only; the capture API talks to it and to Part-DB over the tailnet.
+- **Operations:** nightly backups (SQLite snapshot + uploads) to the Synology, Part-DB pinned and updated by a script (backup, migrations, health check), notifications through the homelab's ntfy server.
 
 ### Capture flow
 
-1. Take a photo in the PWA, which uploads it to `capture-api`.
-2. `capture-api` sends the image to the vision model and receives structured JSON (name, MPN, manufacturer, category, package, confidence).
-3. `capture-api` searches Part-DB for matches. If one exists, the app shows where it is.
-4. Otherwise you review the suggested fields, confirm, and the part, stock lot and photo are created in Part-DB.
-5. `capture-api` asks the Pi print server to print a QR label linking to the part.
+1. Take up to 4 photos in the PWA (a part, its bag or a product page); the browser shrinks them and uploads them to `capture-api`.
+2. `capture-api` sends them to the vision model and receives structured JSON: name, MPN, manufacturer, category, package, key parameters, confidence.
+3. `capture-api` searches Part-DB. **Same part in stock?** The app shows how many and in which bin, with *+ Add to stock*. Similar parts are listed separately.
+4. **New part:** you review the fields; the app suggests a bin from the category and whether the part is bagged or loose (`docs/what-goes-where.md`), with *Bin full → next bin* and *Inbox, sort later*.
+5. Saving creates the part, stock lot, parameters and photos in Part-DB.
+6. The Pi prints a QR label for the bag and, if the part opened a new bin, a label for the bin. Scanning a label later opens the part or the bin's contents in Part-DB.
 
 ## Physical storage
 
@@ -100,10 +106,12 @@ Full details, drawer layouts, colours and the wall plan: **[docs/storage.md](doc
 | Capture frontend | React + Vite PWA | served by the backend |
 | Vision | Azure OpenAI multimodal model, JSON-schema structured output | Azure |
 | Networking | Tailscale sidecar containers (HTTPS via `tailscale serve`) | Azure VM |
+| Public access | Cloudflare Tunnel (`cloudflared` per service) + Cloudflare Access (GitHub login) | Azure VM → Cloudflare |
 | Print server | Python FastAPI, Pillow, `segno`, `ptouch-print`; docker compose + Tailscale sidecar | Raspberry Pi 3 |
 | Infrastructure | Terraform, cloud-init, Ubuntu 24.04 LTS | Azure |
-| Backups | nightly `sqlite3 .backup` + uploads, rsync over Tailscale | → Synology |
-| Storage bins | Gridfinity via cqgridfinity (CadQuery), Bambu Studio preset | Mac → Bambu Lab A1 |
+| Backups | nightly `sqlite3 .backup` + uploads, rsync over Tailscale to the NAS's rsync service | → Synology |
+| Updates and alerts | `scripts/update.sh` (pinned Part-DB, backup, migrations, health check), ntfy | Azure VM → homelab ntfy |
+| Storage bins | Gridfinity via cqgridfinity (CadQuery), plate packing into 3MF, drawer labels, Bambu Studio presets | Mac → Bambu Lab A1 |
 | CI | GitHub Actions → GitHub Container Registry | GitHub |
 
 ## Repository layout
@@ -116,7 +124,7 @@ shelfie-parts/
 ├── capture-web/    # React + Vite PWA
 ├── print-server/   # FastAPI print service for the Pi (own compose stack + Tailscale sidecar)
 ├── vision/         # vision prompt, JSON schema, identify.py test CLI
-├── storage/        # plan.json (drawers and bins), generate.py (Gridfinity STLs), plates.py (A1 plates as 3MF), bambu/ (A1 print preset)
+├── storage/        # plan.json (drawers and bins), generate.py (Gridfinity STLs), plates.py (A1 plates as 3MF), drawer_labels.py, sync_locations.py (Part-DB), bambu/ (A1 presets)
 ├── scripts/        # backup.sh, update.sh, notify.sh (ntfy)
 ├── brand/          # logo and app icons (SVG masters, rendered PNGs, render.mjs)
 └── docs/           # getting-started.md, storage.md (Gridfinity bins in an IKEA Helmer), what-goes-where.md, drawer-layouts.md
@@ -128,9 +136,9 @@ shelfie-parts/
 
 - **Portability first.** Azure provides only a Linux VM and the vision model. Everything else is containers, with images published to GHCR, not tied to any cloud registry.
 - **Swappable AI.** The vision provider sits behind an OpenAI-compatible client; switching providers is a configuration change.
-- **No open ports.** The VM's network security group blocks all inbound traffic. Access, SSH included, goes through Tailscale.
+- **No open ports.** The VM's network security group blocks all inbound traffic. Access, SSH included, goes through Tailscale; the two public addresses use outbound Cloudflare Tunnels behind a login.
 - **Backups off-cloud.** Data is copied nightly to the home NAS, so losing the cloud subscription never means losing the inventory.
-- **Nothing exposed at home.** No port forwarding; the print server is reachable only from the capture API, via Tailscale ACLs.
+- **Nothing exposed at home.** No port forwarding; the print server and the NAS are reachable only over Tailscale, and the VM's backup user can only write to one shared folder.
 
 ## Roadmap
 
