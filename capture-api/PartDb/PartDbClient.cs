@@ -137,13 +137,14 @@ public sealed class PartDbClient
             if (photos.Count > 0)
             {
                 var photoType = await ResolvePathAsync("attachment_types", ["Photo"], ct, new() { ["filetype_filter"] = "image/*" });
-                foreach (var (fileName, data) in photos)
+                // Part-DB wants attachment names unique per part: "Photo", "Photo 2", "Photo 3", …
+                foreach (var ((fileName, data), i) in photos.Select((p, i) => (p, i)))
                     (await PostAsync("attachments", new Dictionary<string, object?>
                     {
                         ["_type"] = "Part",
                         ["element"] = partIri,
                         ["attachment_type"] = photoType,
-                        ["name"] = "Photo",
+                        ["name"] = i == 0 ? "Photo" : $"Photo {i + 1}",
                         ["upload"] = new { data = Convert.ToBase64String(data.ToArray()), filename = fileName },
                     }, ct)).Dispose();
             }
