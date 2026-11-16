@@ -134,25 +134,33 @@ shelfie-parts/
 
 ## Roadmap
 
+**App and infrastructure**
 - [x] Infrastructure: Terraform for the Azure VM and Azure OpenAI deployment
 - [x] Part-DB behind a Tailscale sidecar (docker compose)
-- [x] Vision prompt, JSON schema and `identify.py` test CLI
-- [x] Vision prompt tested and tuned with real parts
+- [x] Vision prompt, JSON schema and `identify.py` test CLI, tuned with real parts
 - [x] Print server on the Raspberry Pi 3 (P700 via `ptouch-print`)
 - [x] Capture API: identify → search → create → print
-- [ ] Capture PWA (in progress, deployed, needs a phone test)
-- [ ] "Do I already have it?" check from screenshots and AliExpress links
-- [x] Backup script (SQLite snapshot + uploads → rsync)
-- [ ] Nightly backups to the Synology scheduled
+- [x] Capture PWA in daily use: photos → stock check → bin suggestion → part and bin labels
+- [x] Storage locations in Part-DB (109 bins) and QR bin labels from the app
 - [x] CI: build and publish the capture API image to GHCR
+- [x] Public access without Tailscale: capture app and Part-DB through Cloudflare Tunnel + Access (GitHub login)
+- [x] Nightly backups to the Synology (rsync service, dedicated backup user)
+- [x] Part-DB pinned, automatic minor updates with backup, health check and ntfy notifications
+- [ ] App in the brand colours (icons done)
+- [ ] "Do I already have it?" from AliExpress screenshots and product links (works in principle, not tested enough)
+- [ ] Vision tuning for passives and product-page screenshots
+
+**Physical storage**
 - [x] Storage plan for the IKEA Helmer and the Multiboard wall
-- [x] Gridfinity generator (`storage/generate.py`) and A1 print preset
-- [ ] First baseplate and bin printed and fitted
-- [ ] Storage-location labels for bins and the location tree in Part-DB
+- [x] Gridfinity generator (`storage/generate.py`), plate packer (`storage/plates.py`) and A1 print presets
+- [x] Baseplates printed and fitted; bin heights adapted to how far the drawers open
+- [x] Drawer labels (D1–D6) in the bin colours
+- [ ] Print the remaining bins (D6 and D2's front bins done)
+- [ ] Multiboard wall: `W-INBOX` and `W-PROJECT`
 
 ## Status
 
-🚧 Part-DB, the capture API and the print server are running; the capture PWA is deployed and being tested. The storage plan and print files are ready; nothing printed yet.
+✅ In use. Part-DB, the capture API, the PWA and the label printer run end to end, from the phone and away from home. The first parts are captured, labelled and stored in the Helmer; the remaining Gridfinity bins are being printed.
 
 ## License
 
