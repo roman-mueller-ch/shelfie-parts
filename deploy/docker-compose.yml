@@ -69,6 +69,13 @@ services:
       - INSTANCE_NAME=Shelfie
       - ALLOW_ATTACHMENT_DOWNLOADS=0
       - USE_GRAVATAR=0
+      # Info providers for stock photos and part data, all without an account:
+      # LCSC (branded chips), Bambu Lab store (printer parts), any shop page
+      # with schema.org data (Generic Web). Searchable via POST /api/info_providers/search.
+      - PROVIDER_LCSC_ENABLED=1
+      - PROVIDER_BAMBULAB_ENABLED=1
+      - PROVIDER_BAMBULAB_REGION=EU
+      - PROVIDER_GENERIC_WEB_ENABLED=1
       # Requests arrive from the Tailscale sidecar on localhost.
       - TRUSTED_PROXIES=127.0.0.1
       # Only answer to the tailnet name (parts.<tailnet>.ts.net) and the public
