@@ -8,6 +8,7 @@ export interface KeyParameter {
 
 export interface IdentifiedItem {
   name: string;
+  label: string; // text for the printed label, at most 15 characters
   category_path: string[];
   mpn: string | null;
   manufacturer: string | null;
@@ -52,6 +53,7 @@ export interface CreatePartRequest {
   notes?: string | null;
   quantity?: number | null;
   storage_location_path?: string[];
+  label?: string | null;
 }
 
 export interface CreatedPart {

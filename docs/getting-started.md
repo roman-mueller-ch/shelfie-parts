@@ -169,7 +169,7 @@ For local development (`dotnet run` in `capture-api/`), the secrets go into `dot
 | `POST /api/identify` | multipart `images` (1–4) + optional `hint` → identification + matching parts in stock (`same: true` = the same part, else only similar) |
 | `POST /api/parts` | multipart `part` (JSON) + optional `photos` → creates the part with stock lot, parameters, photos (`new_bin: true` if nothing was in that location before) |
 | `POST /api/parts/{id}/stock` | JSON `{quantity, storage_location_path?}` → adds stock to an existing part (its lot in that location, or a new lot: `new_lot: true`) |
-| `POST /api/parts/{id}/label` | prints the QR label; optional JSON `{title, subtitle, copies}` |
+| `POST /api/parts/{id}/label` | prints the QR label (title: the part's description, else its MPN or name, cut to 15 characters; subtitle: its bin); optional JSON `{title, subtitle, copies}` |
 | `GET /api/parts/{id}/label.png` | label preview |
 | `GET /api/bins/suggest?category=…&category=…&bagged=true` | where a new part goes: drawer(s) from the category, the bin being filled (or first empty one), the empty bins |
 | `GET /api/storage-locations` | all storage locations (id, name, full path) |

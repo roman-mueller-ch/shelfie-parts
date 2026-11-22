@@ -99,7 +99,7 @@ public sealed class PartDbClient
         var part = new Dictionary<string, object?>
         {
             ["name"] = request.Name.Trim(),
-            ["description"] = request.Description ?? "",
+            ["description"] = request.Description ?? ShortLabel(request.Label) ?? "",
             ["manufacturer_product_number"] = request.Mpn ?? "",
             ["comment"] = Comment(request),
             ["category"] = await ResolvePathAsync("categories", request.CategoryPath, ct),
@@ -307,6 +307,8 @@ public sealed class PartDbClient
 
         var name = Str(part, "name") ?? $"Part {id}";
         var mpn = NullIfEmpty(Str(part, "manufacturer_product_number"));
+        // The label text from the capture app lives in the description; older parts get a shortened MPN or name.
+        var title = ShortLabel(Str(part, "description")) ?? ShortLabel(mpn) ?? ShortLabel(name) ?? $"Part {id}";
         var location = part.TryGetProperty("partLots", out var lots) && lots.ValueKind == JsonValueKind.Array
             ? lots.EnumerateArray()
                 .Select(l => l.TryGetProperty("storage_location", out var s) && s.ValueKind == JsonValueKind.Object ? Str(s, "name") : null)
@@ -314,8 +316,8 @@ public sealed class PartDbClient
             : null;
 
         return new LabelContent(
-            NullIfEmpty(overrides.Title) ?? mpn ?? name,
-            NullIfEmpty(overrides.Subtitle) ?? location ?? (mpn is null ? null : name),
+            NullIfEmpty(overrides.Title) ?? title,
+            NullIfEmpty(overrides.Subtitle) ?? location,
             $"{_publicUrl}/scan/part/{id}",
             Math.Clamp(overrides.Copies, 1, 20));
     }
@@ -441,6 +443,24 @@ public sealed class PartDbClient
         e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 
     private static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+
+    /// <summary>Longest text that still fits a short label (QR code + bin matter more).</summary>
+    public const int LabelMaxChars = 15;
+
+    /// <summary>
+    /// <paramref name="text"/> cut to <see cref="LabelMaxChars"/>: without a parenthesised or comma-separated tail,
+    /// then at the last space that fits. "ESP32 development board (USB-C)" → "ESP32".
+    /// </summary>
+    public static string? ShortLabel(string? text)
+    {
+        text = NullIfEmpty(text)?.Trim();
+        if (text is null || text.Length <= LabelMaxChars) return text;
+        var cut = text.IndexOfAny(['(', ',']);
+        if (cut > 0) text = text[..cut].TrimEnd();
+        if (text.Length <= LabelMaxChars) return text;
+        var space = text.LastIndexOf(' ', LabelMaxChars);
+        return (space > 0 ? text[..space] : text[..LabelMaxChars]).TrimEnd();
+    }
 
     private static string EscapeLike(string s) => s.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 }

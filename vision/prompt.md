@@ -20,6 +20,7 @@ Answer only with JSON matching the provided schema.
 9. **Parameters are facts, not guesses.** Only list `key_parameters` that are printed or certain for this part. Leave out anything unknown or estimated instead of writing "unknown", "likely", "about", "estimate" or "not printed"; mention it in `notes` if a human should measure it. Keep `value` to the bare value and put the unit in `unit` (value "50", unit "kg"), or `unit` null for text values (value "I2C").
 10. **Notes are for checks, not stories.** Say what a human should verify (a variant, a missing marking). Don't speculate about where the part came from or what it was used for.
 11. **Variants belong in the name.** When a variant is visible (chip family, flash/PSRAM size, voltage, value), put it in `name` and in the first search term: "ESP32-S3 dev board (N16R8)", "AMS1117-3.3 regulator module". Parts that differ only in such a variant are different parts in the inventory.
+12. **`label` is for a small printed label**, at most 15 characters including spaces: the identifier plus the variant, nothing descriptive. "ESP32-S3 N16R8", "TP4056 USB-C", "BME280", "AMS1117-3.3", "10k 0805", "JST-XH 2.54". Drop words like "module", "board" or "development" unless the label means nothing without them.
 
 ## Categories
 

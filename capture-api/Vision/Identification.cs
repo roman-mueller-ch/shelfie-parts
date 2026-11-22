@@ -10,6 +10,8 @@ public sealed record Identification(
 
 public sealed record IdentifiedItem(
     string Name,
+    /// <summary>Text for the printed label, at most 15 characters.</summary>
+    string Label,
     IReadOnlyList<string> CategoryPath,
     string? Mpn,
     string? Manufacturer,

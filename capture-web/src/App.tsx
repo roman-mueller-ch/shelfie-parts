@@ -257,6 +257,9 @@ function MatchText({ m }: { m: StockMatch }) {
 
 // ------------------------------------------------------------------ 3. review
 
+/** Printed labels stay short: QR code, this text and the bin (LabelMaxChars in the capture API). */
+const LABEL_MAX = 15;
+
 function Review(props: {
   item: IdentifiedItem;
   photos: Blob[];
@@ -265,6 +268,7 @@ function Review(props: {
 }) {
   const { item, photos, onBack, onSaved } = props;
   const [name, setName] = useState(item.name);
+  const [label, setLabel] = useState((item.label ?? "").slice(0, LABEL_MAX));
   const [mpn, setMpn] = useState(item.mpn ?? "");
   const [manufacturer, setManufacturer] = useState(item.manufacturer ?? "");
   const [pkg, setPkg] = useState(item.package ?? "");
@@ -327,6 +331,7 @@ function Review(props: {
           notes: notes.trim() || null,
           quantity: quantity.trim() === "" ? null : Number(quantity),
           storage_location_path: splitPath(location),
+          label: label.trim() || null,
         },
         photos,
       );
@@ -343,6 +348,9 @@ function Review(props: {
   return (
     <section>
       <label>Name<input value={name} onChange={(e) => setName(e.target.value)} /></label>
+      <label>Label text ({label.length}/{LABEL_MAX})
+        <input value={label} maxLength={LABEL_MAX} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. ESP32-S3 N16R8" />
+      </label>
       <label>Category<input value={category} onChange={(e) => setCategory(e.target.value)} /></label>
       <div className="row">
         <label>MPN<input value={mpn} onChange={(e) => setMpn(e.target.value)} /></label>

@@ -19,7 +19,9 @@ public sealed record CreatePartRequest(
     /// <summary>Null means "in stock, amount unknown".</summary>
     double? Quantity = null,
     /// <summary>E.g. ["Shelf A", "Box 4"]. Empty: no stock lot location.</summary>
-    IReadOnlyList<string>? StorageLocationPath = null);
+    IReadOnlyList<string>? StorageLocationPath = null,
+    /// <summary>Short text for the printed label; stored as the Part-DB description when no description is given.</summary>
+    string? Label = null);
 
 /// <summary><paramref name="NewBin"/>: nothing was stored in the location before (its bin needs a label).</summary>
 public sealed record CreatedPart(int Id, string Name, string Url, string ScanUrl, int Photos,

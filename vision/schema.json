@@ -16,6 +16,7 @@
         "additionalProperties": false,
         "required": [
           "name",
+          "label",
           "kind",
           "category_path",
           "mpn",
@@ -32,6 +33,10 @@
           "name": {
             "type": "string",
             "description": "Short, human-friendly name as it should appear in the inventory, e.g. \"TP4056 Li-ion charger module (USB-C)\"."
+          },
+          "label": {
+            "type": "string",
+            "description": "Text for the printed label, at most 15 characters, e.g. \"ESP32-S3 N16R8\", \"TP4056 USB-C\", \"10k 0805\"."
           },
           "kind": {
             "type": "string",
