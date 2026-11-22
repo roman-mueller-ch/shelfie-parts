@@ -259,3 +259,9 @@ Which parts go into which drawer: [what-goes-where.md](what-goes-where.md).
 |---|---|---|
 | `W-INBOX` | New parcels, waiting to be captured | 1 × 4×2 10u |
 | `W-PROJECT` | Parts for the current project | 2 × 2×2 6u |
+
+## Boxes
+
+| Location | Contents |
+|---|---|
+| `BOX-1` | Bambu Lab printer parts and accessories |

@@ -178,6 +178,12 @@ def load_plan(path: Path) -> Plan:
 
     for entry in raw.get("wall", []):
         plan.wall.append((entry, make_spec(entry, defaults)))
+
+    # Location names resolve on their own in the capture app, so they must be unique across the plan.
+    ids = names + [e["id"] for e, _ in plan.wall] + [b["id"] for b in raw.get("boxes", [])]
+    dupes = {n for n in ids if ids.count(n) > 1} - dupes
+    if dupes:
+        plan.errors.append(f"duplicate location names: {', '.join(sorted(dupes))}")
     return plan
 
 
@@ -370,6 +376,10 @@ def write_layouts_md(plan: Plan, path: Path) -> None:
             n = entry.get("count", 1)
             out.append(f"| `{entry['id']}` | {entry.get('contents', '')} | {n} × {spec.across}×{spec.deep} {spec.height}u |")
         out.append("")
+    if plan.raw.get("boxes"):
+        out += ["## Boxes", "", "| Location | Contents |", "|---|---|"]
+        out += [f"| `{box['id']}` | {box.get('contents', '')} |" for box in plan.raw["boxes"]]
+        out.append("")
     path.write_text("\n".join(out))
 
 
@@ -382,6 +392,9 @@ def locations(plan: Plan) -> list[str]:
             out += [f"Helmer › {drawer['id']} › {b.name} › {c}" for c in b.compartment_names]
     out.append("Wall")
     out += [f"Wall › {entry['id']}" for entry, _ in plan.wall]
+    if plan.raw.get("boxes"):
+        out.append("Boxes")
+        out += [f"Boxes › {box['id']}" for box in plan.raw["boxes"]]
     return out
 
 

@@ -119,5 +119,9 @@
   "wall": [
     { "id": "W-INBOX", "contents": "New parcels, waiting to be captured", "colour": "yellow", "size": [4, 2], "height": 10 },
     { "id": "W-PROJECT", "contents": "Parts for the current project", "colour": "green", "size": [2, 2], "height": 6, "count": 2 }
+  ],
+  "_boxes_comment": "Storage boxes outside the Helmer for parts too big for a bin or that don't belong in one (e.g. 3D printer spare parts). Any size; add one entry per box, then run storage/sync_locations.py. Not Gridfinity, nothing to print. Part-DB: Boxes › BOX-1.",
+  "boxes": [
+    {"id": "BOX-1", "contents": "Bambu Lab printer parts and accessories"}
   ]
 }

@@ -28,13 +28,19 @@ Drawings of every drawer with all bin names: [drawer-layouts.md](drawer-layouts.
 - **`W-INBOX`:** new parcels until they're captured with the app. A queue, not storage: parts captured without time to sort go here and are moved later.
 - **`W-PROJECT`** (2 bins): parts pulled for the current project. Move them in Part-DB when taken out and when put back.
 
+## Boxes (outside the Helmer)
+
+- **`BOX-1`, `BOX-2`, …:** storage boxes of any size for parts too big for a D6 bin or that don't belong in a Gridfinity bin, e.g. Bambu Lab printer parts (LED lamp kit, spare hotends). In Part-DB: `Boxes › BOX-1`. Numbered in the order they're added; the label (from the *Bin labels* screen) goes on the front.
+- **Adding a box:** one line in `boxes` in `storage/plan.json`, then `python3 storage/sync_locations.py`. The capture app has no rule for boxes: type the box name as the storage location.
+
 ## Deciding where a part goes
 
 1. **Still in its bag?** → D2, then D3 when D2 is full. Most AliExpress orders; the bag keeps parts and their label together.
 2. **Loose and tiny?** → a D1 compartment.
 3. **A board with pins?** → D4 for a module or sensor, D5 for a dev board or display.
 4. **Too big for a 6u bin (bags folded, about 7 cm max standing), a cable or a tool?** → D6.
-5. **No time to sort?** → `W-INBOX`.
+5. **Too big even for D6, or a printer/tool accessory that doesn't belong in a bin?** → a box (`BOX-1`, …).
+6. **No time to sort?** → `W-INBOX`.
 
 Within a drawer, keep similar parts together (e.g. in D4: sensors front left, power modules front right, motor drivers at the back). Exact positions don't matter; the app shows which bin a part is in.
 

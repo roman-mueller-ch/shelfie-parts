@@ -196,6 +196,10 @@ A small area on the Multiboard wall next to the desk, **35 × 35 cm**, for thing
 - **Labels go on the front of the bins** here: a tab on top is hard to read or scan at eye level.
 - **Locations** are named by role, not position: `Wall › W-INBOX` and `Wall › W-PROJECT`.
 
+## Boxes
+
+Parts too big for the Helmer, or that don't belong in a Gridfinity bin (Bambu Lab printer parts, for example), go into storage boxes of any size: `BOX-1`, `BOX-2`, …, under `Boxes` in Part-DB. They are listed in `boxes` in `plan.json` (id and contents, no size) and added over time; see [what-goes-where.md](what-goes-where.md#boxes-outside-the-helmer).
+
 A 2×4 shelf is about 17 cm wide, so two fit side by side in 35 cm if a second project shelf is needed later. Allow roughly 11–12 cm per shelf row so bins can be lifted out.
 
 ### Wall print list
