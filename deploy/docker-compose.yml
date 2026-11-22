@@ -76,6 +76,10 @@ services:
       - PROVIDER_BAMBULAB_ENABLED=1
       - PROVIDER_BAMBULAB_REGION=EU
       - PROVIDER_GENERIC_WEB_ENABLED=1
+      # MCP server at /mcp for AI assistants (Claude Code over the tailnet;
+      # db.rmlabs.ch is behind Cloudflare Access). Read-only: editing tools off.
+      - MCP_ENABLED=1
+      - MCP_EDITING_ENABLED=0
       # Requests arrive from the Tailscale sidecar on localhost.
       - TRUSTED_PROXIES=127.0.0.1
       # Only answer to the tailnet name (parts.<tailnet>.ts.net) and the public
